@@ -1,0 +1,33 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:html="jelly:html" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <st:bind var="backend" value="${descriptor}"/>    
+    <f:invisibleEntry>
+		<f:textbox  field="lang" value="${%eng}" default="${%eng}"/>
+     </f:invisibleEntry>
+    <f:entry title="${%Name of report}" field="nameReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-name.html">
+		<f:textbox default="Report"/>
+    </f:entry>
+        
+    <f:entry title="${%Model of report}" field="modelReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-model.html">
+      <f:select />
+    </f:entry>
+
+    <f:entry title="${%Template of report}" field="templateReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-template.html">
+      <f:select />
+    </f:entry>
+
+    <f:entry field="reqtifyError">
+        <div id="reqtifyErrorDiv"><span style="color:red;" id="reqtifyErrorSpan"></span></div>
+    </f:entry>    
+    
+  <script>
+        backend.getReqtifyError(function(reqtifyError){
+            if(reqtifyError === undefined || reqtifyError === null) {
+                document.getElementById('reqtifyErrorDiv').style.display = 'none';   
+            } else {
+                document.getElementById('reqtifyErrorDiv').style.display = 'block';
+                document.getElementById('reqtifyErrorSpan').innerHTML = reqtifyError.responseJSON;   
+            }            
+        });                
+  </script>
+</j:jelly>
