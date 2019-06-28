@@ -49,7 +49,7 @@ import org.kohsuke.stapler.bind.JavaScriptMethod;
 /**
  * This class allow us to generate a reqtify report with Jenkins.
  * 
- * @author 3DS
+ * @author Dassault Systèmes
  * @version 1.0
  */
 @Extension

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 NKR8.
+ * Copyright 2019 Dassault Systèmes.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@ import org.kohsuke.stapler.Stapler;
 
 /**
  *
- * @author NKR8
+ * @author Dassault Systèmes
  */
 public class Utils {
     	/**
