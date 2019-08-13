@@ -1,26 +1,20 @@
 package io.jenkins.plugins;
 
-import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.model.AbstractProject;
-import hudson.model.Build;
-import hudson.model.BuildListener;
-import hudson.model.Environment;
-import hudson.model.EnvironmentList;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
+import java.io.File;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
@@ -49,7 +43,7 @@ import org.kohsuke.stapler.bind.JavaScriptMethod;
 /**
  * This class allow us to generate a reqtify report with Jenkins.
  * 
- * @author Dassault Systèmes
+ * @author 3DS
  * @version 1.0
  */
 @Extension
@@ -248,36 +242,30 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep{
                                    "&aReportTemplate="+URLEncoder.encode(this.templateReport, "UTF-8")+
                                    "&aFileOut="+workspace.getRemote()+"\\"+URLEncoder.encode(this.nameReport+"."+FilenameUtils.getExtension(this.templateReport),"UTF-8");
 
-                File file = new File(workspace.getRemote());
-                boolean reqtifyProjectExist = utils.isReqtifyProjectExistInWorkspace(file, "rqtf");
 
-                if(!reqtifyProjectExist) {
-                    try {
-                        throw new ReqtifyException("Reqtify project is missing in your workspace");
-                    } catch (ReqtifyException ex) {
-                        //listener.getLogger().println(ex.getMessage());
-                        listener.error(ex.getMessage());
-                        run.setResult(Result.FAILURE);
-                    }
-                } else {
-                    try {                                   
-                        utils.executeGET(targetUrl, reqtifyProcess);
-                    } catch (ParseException ex) {
-                        Logger.getLogger(ReqtifyGenerateReport.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (ConnectException e) {
-                        listener.error(e.getMessage());
-                        run.setResult(Result.FAILURE);
-                    } catch(ReqtifyException re) {
+                try {                                   
+                    utils.executeGET(targetUrl, reqtifyProcess, true);
+                } catch (ParseException ex) {
+                    Logger.getLogger(ReqtifyGenerateReport.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (ConnectException e) {
+                    listener.error(e.getMessage());
+                    run.setResult(Result.FAILURE);
+                } catch(ReqtifyException re) {
+                    
+                    if(re.getMessage().length() > 0) {
+                        listener.error(re.getMessage());
+                        run.setResult(Result.FAILURE);                    
+                    } else {                    
                         Process p = reqtfyLanguageProcessMap.get(reqtifyLang);
                         if(p.isAlive())
                             p.destroy();
-                        
+
                         reqtfyLanguageProcessMap.remove(reqtifyLang);
                         reqtifyLanguagePortMap.remove(reqtifyLang);
                         listener.error(utils.getLastLineOfFile(tempDir+"\\reqtifyLog_"+reqtifyPort+".txt"));
-                        run.setResult(Result.FAILURE);
+                        run.setResult(Result.FAILURE);                    
                     }
-                }                    
+                }                                
 	}
                         
 	/**
@@ -333,49 +321,38 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep{
                 public String getReqtifyError() {
                     return reqtifyError;
                 }
-        
-		/**
-		 * @param jobType
-		 * @return
-		 * @since 1.0
-		 */
-		@Override
-		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-                                        
-                    try {                                                
+                
+                @JavaScriptMethod
+                public List<List<String>> getReportModelsAndTemplates() throws InterruptedException, IOException {
+                    List<List<String>> modelsAndTemplates = new ArrayList<>();
+                    modelsAndTemplates.add(this.getModels());
+                    modelsAndTemplates.add(this.getTemplates());
+                    
+                    return modelsAndTemplates;
+                }
+                
+                @JavaScriptMethod
+                public String getReqtifyData(String pageLocation) {
+                    try { 
+                        
                         FilePath currentWorkspacePath;
-                        String currentJob = "";
+                        String currentJob = null;
                         reqtifyError = "";
                         List<String> modelsTemp = new ArrayList<>();
                         List<String> templatesTemp = new ArrayList<>(); 
-                        Pattern pattern = Pattern.compile("job/(.*?)/descriptorByName");
-                        Matcher matcher = pattern.matcher(Jenkins.getInstance().getDescriptor().getDescriptorFullUrl());
+                        Pattern pattern = Pattern.compile("(.*)/job/(.*?)/(.*)");
+                        
+                        Matcher matcher = pattern.matcher(pageLocation);
                         while (matcher.find()) {
-                            currentJob = matcher.group(1);
+                            currentJob = matcher.group(2);
                         }
 
                         currentWorkspacePath = Jenkins.getInstance().getWorkspaceFor(Jenkins.getInstance().getItem(currentJob));                    
-                        
                         this.setModels(modelsTemp);
                         this.setTemplates(templatesTemp);
                         
                         if(currentWorkspacePath != null && currentWorkspacePath.exists()) {
-                            currentWorkspace = currentWorkspacePath.getRemote();
-                            
-                            File file = new File(currentWorkspace);
-                            boolean reqtifyProjectExist = utils.isReqtifyProjectExistInWorkspace(file, "rqtf");
-
-                            if(!reqtifyProjectExist) {
-                                try {
-                                    throw new ReqtifyException("Reqtify project is missing in your workspace");
-                                } catch (ReqtifyException ex) {
-                                    //Show Reqtify project does not exist error
-                                    reqtifyError = ex.getMessage();
-                                } finally {
-                                    return true;
-                                }
-                            }                            
-                            
+                            currentWorkspace = currentWorkspacePath.getRemote();                                     
                             if(currentWorkspace.contains(" ")) {
                               currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
                             } 
@@ -410,8 +387,8 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep{
                         String targetURLModels = "http://localhost:"+reqtifyPort+"/jenkins/getReportModels?dir="+currentWorkspace;
                         String targetURLTemplates = "http://localhost:"+reqtifyPort+"/jenkins/getReportTemplates?dir="+currentWorkspace;
                         try {
-                            JSONArray modelsResult = utils.executeGET(targetURLModels, reqtifyProcess);
-                            JSONArray templatesResult = utils.executeGET(targetURLTemplates, reqtifyProcess);
+                            JSONArray modelsResult = utils.executeGET(targetURLModels, reqtifyProcess, false);
+                            JSONArray templatesResult = utils.executeGET(targetURLTemplates, reqtifyProcess, false);
                             System.out.println("Reports models successfully!");   
                             Iterator<JSONObject> itr = modelsResult.iterator();
                             //Models
@@ -435,20 +412,33 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep{
                         }  catch (ConnectException ce) {
                             //Show some error
                         }  catch (ReqtifyException re) {
-                            //Show error popup
-                            Process p = reqtfyLanguageProcessMap.get(reqtifyLang);
-                            if(p.isAlive())
-                                p.destroy();
                             
-                            reqtfyLanguageProcessMap.remove(reqtifyLang);
-                            reqtifyLanguagePortMap.remove(reqtifyLang);
-                            reqtifyError = utils.getLastLineOfFile(tempDir+"\\reqtifyLog_"+reqtifyPort+".txt");
-                            return true;
+                            if(re.getMessage().length() > 0) {
+                                return re.getMessage();
+                            } else {  
+                                Process p = reqtfyLanguageProcessMap.get(reqtifyLang);
+                                if(p.isAlive())
+                                    p.destroy();
+
+                                reqtfyLanguageProcessMap.remove(reqtifyLang);
+                                reqtifyLanguagePortMap.remove(reqtifyLang);
+                                reqtifyError = utils.getLastLineOfFile(tempDir+"\\reqtifyLog_"+reqtifyPort+".txt");
+                                return reqtifyError;
+                            }                            
                         }                                      
                     } catch(IOException | InterruptedException | AccessDeniedException e) {
                         e.printStackTrace();
-                    }  
-                    
+                    }                       
+                    return reqtifyError;
+                }
+        
+		/**
+		 * @param jobType
+		 * @return
+		 * @since 1.0
+		 */
+		@Override
+		public boolean isApplicable(Class<? extends AbstractProject> jobType) {                                                            
                     return true; 
                 } 
                 

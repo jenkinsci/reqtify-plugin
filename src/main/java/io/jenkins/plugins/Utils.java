@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 Dassault Systèmes.
+ * Copyright 2019 NKR8.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 package io.jenkins.plugins;
+import hudson.FilePath;
 import static io.jenkins.plugins.ReqtifyGenerateReport.readAll;
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,6 +35,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URL;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
@@ -45,7 +48,7 @@ import org.kohsuke.stapler.Stapler;
 
 /**
  *
- * @author Dassault Systèmes
+ * @author NKR8
  */
 public class Utils {
     	/**
@@ -70,7 +73,7 @@ public class Utils {
                 return path;
 	}
         
-        public JSONArray executeGET(String targetURL, Process reqtifyProcess) throws ParseException, IOException, ReqtifyException {
+        public JSONArray executeGET(String targetURL, Process reqtifyProcess, boolean buildRequest) throws ParseException, IOException, ReqtifyException {
               HttpURLConnection connection = null;
               JSONArray result = null;
               boolean isConnected = false;
@@ -87,23 +90,30 @@ public class Utils {
                 connection.setRequestProperty("Content-Type", "application/json");
 
                 if (connection.getResponseCode() != 200) {
-                    throw new ReqtifyException(connection.getResponseMessage());
+                    
+                    if(connection.getResponseCode() == 404)
+                         throw new ReqtifyException("No Reqtify project in the working directory");
+                    else
+                        throw new ReqtifyException(connection.getResponseMessage());
                 }
 
                 isConnected = true;      
                 isr = new InputStreamReader((connection.getInputStream()),"UTF-8");
                 br = new BufferedReader(isr);                
-                
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                        response.append(line);
-                }                               
-                
-                JSONParser parser = new JSONParser();
-                result = (JSONArray)parser.parse(response.toString());
-
+                                                              
+                if(!buildRequest) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                            response.append(line);
+                    }                    
+                    JSONParser parser = new JSONParser();
+                    result = (JSONArray)parser.parse(response.toString());                
+                } else {
+                    result = new JSONArray();
+                }
               } catch (MalformedURLException e) {
+                  throw new MalformedURLException();
               } catch (IOException e) {                  
                     if(!reqtifyProcess.isAlive()) {
                         throw new ReqtifyException("");
@@ -146,16 +156,16 @@ public class Utils {
         }
     }         
         
-    public boolean isReqtifyProjectExistInWorkspace(File file, String search) throws IOException {
+    public boolean isReqtifyProjectExistInWorkspace(FilePath file, String search) throws IOException, InterruptedException {
         if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if(files != null) {
-                for (File f : files) {
-                    boolean found = isReqtifyProjectExistInWorkspace(f, search);
-                    if (found)
-                        return true;
-                }                
-            }
+            List<FilePath> files = file.list();
+            Iterator itr = files.iterator();
+            boolean found;
+            while(itr.hasNext()){
+                found = isReqtifyProjectExistInWorkspace((FilePath)itr.next(), search);
+                if (found)
+                    return true;
+            }                
         } else {
             if (file.getName().endsWith(search)) {
                 return true;
@@ -178,12 +188,13 @@ public class Utils {
 		} catch (FileNotFoundException e) {
 			return("File not found");
 		}
-	    String line = "";
+	    StringBuilder error = new StringBuilder();
 	    while (scanner.hasNextLine()) {
-	        line = scanner.nextLine();
+	        error.append(scanner.nextLine()).append("<br>");
 	    }
+            
 	    scanner.close();
-		return line;
+		return error.toString();
 	}
         
         public String getBrowserLanguage() {

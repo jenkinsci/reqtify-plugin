@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <url>https://wiki.jenkins.io/display/JENKINS/Reqtify+Plugin</url>
+    <developers>
+      <developer>
+        <id>NKR8</id>
+        <name>Dassault Systèmes</name>
+        <email>navnath.kumbhar@3ds.com</email>
+      </developer>
+    </developers>    
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
@@ -13,7 +21,7 @@
     <packaging>hpi</packaging>
     <properties>
         <jenkins.version>2.7.3</jenkins.version>
-        <java.level>8</java.level>
+        <java.level>8</java.level>    
     </properties>
     <name>Reqtify Plugin</name>
     <description>A Reqtify plugin for Jenkins</description>
