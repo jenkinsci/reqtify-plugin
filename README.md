@@ -19,5 +19,5 @@ This allows to fill following fields:
 * **Template of report** - This is the template of report. The list contains both library and project report templates.
 
 ### Note:
-The plugin will work only when Reqtify project is present in the Jenkins workspace.
+The plugin will work only when Reqtify project is present in the Jenkins workspace. <br>
 **Reqtify version required: 2020x**
