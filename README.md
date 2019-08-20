@@ -20,3 +20,4 @@ This allows to fill following fields:
 
 ### Note:
 The plugin will work only when Reqtify project is present in the Jenkins workspace.
+Reqtify version required: 2020x
