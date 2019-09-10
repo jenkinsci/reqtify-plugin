@@ -1,4 +1,4 @@
 <?jelly escape-by-default='true'?>
 <div>
-        This plugin adds an ability to configure Reqtify report generation feature in Jenkins.
+   This plugin allows to configure Reqtify report generation from Jenkins and then generate during the build.
 </div>

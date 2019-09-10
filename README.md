@@ -1,6 +1,6 @@
 # Reqtify-plugin-for-Jenkins
 
-This plugin adds an ability to configure Reqtify report genration feature in Jenkins.
+This plugin allows to configure Reqtify report generation from Jenkins and then generate during the build.
 
 ### Configure Reqtify Report Generation
 
