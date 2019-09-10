@@ -9,68 +9,25 @@
     </f:entry>
         
     <f:entry title="${%Model of report}" field="modelReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-model.html">
-      <f:select id="report-model-select" />
+      <f:select />
     </f:entry>
 
     <f:entry title="${%Template of report}" field="templateReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-template.html">
-      <f:select id="report-template-select" />
+      <f:select />
     </f:entry>
 
     <f:entry field="reqtifyError">
         <div id="reqtifyErrorDiv"><span style="color:red;" id="reqtifyErrorSpan"></span></div>
-        <div class="loader" id="reqtifyLoader">
-            <span style="font-weight:bold;color:#447788">Report models and templates are loading. Please wait....</span>
-        </div>
     </f:entry>    
     
   <script>
-        var pageLocation = window.location.href;
-        var promise1 = new Promise(function(resolve, reject) {
-            backend.getReqtifyData(pageLocation,function(reqtifyError){                         
-                document.getElementById('reqtifyLoader').style.display = 'block';      
-                resolve(reqtifyError);
-            });
-        });
-
-        promise1.then(function(reqtifyError) {
-            if(reqtifyError.responseJSON.length === 0) {
+        backend.getReqtifyError(function(reqtifyError){
+            if(reqtifyError === undefined || reqtifyError === null) {
                 document.getElementById('reqtifyErrorDiv').style.display = 'none';   
-                //Check if Reports and templates have been loaded
-                var reportModelsLoaded = document.getElementById('report-model-select').hasChildNodes();
-                var reportTemplatesLoaded = document.getElementById('report-template-select').hasChildNodes();
-
-                if(reportModelsLoaded === false) {
-                    backend.getReportModelsAndTemplates(function(modelsAndTemplates){  
-                        var jsonString = JSON.stringify(modelsAndTemplates);
-                        var result = JSON.parse(jsonString);
-                        var javaArrayList = JSON.parse(result.responseJSON);
-                        var models = javaArrayList[0];
-                        var templates = javaArrayList[1];
-                        var selectModel = document.getElementById("report-model-select"); 
-                        models.forEach(function(item,index){
-                            var option = document.createElement("option");
-                            option.text = item;
-                            selectModel.add(option);
-                        });
-
-                        var selectTemplates = document.getElementById("report-template-select"); 
-                        templates.forEach(function(item,index){
-                            var option = document.createElement("option");
-                            option.text = item;
-                            selectTemplates.add(option);
-                        });
-
-                        document.getElementById('reqtifyLoader').style.display = 'none';     
-                    });            
-                }  else {
-                    document.getElementById('reqtifyLoader').style.display = 'none';     
-                }            
             } else {
                 document.getElementById('reqtifyErrorDiv').style.display = 'block';
-                document.getElementById('reqtifyErrorSpan').innerHTML = reqtifyError.responseJSON;       
-                document.getElementById('reqtifyLoader').style.display = 'none';                     
-            }                                                  
-        });
-
+                document.getElementById('reqtifyErrorSpan').innerHTML = reqtifyError.responseJSON;   
+            }            
+        });                
   </script>
 </j:jelly>

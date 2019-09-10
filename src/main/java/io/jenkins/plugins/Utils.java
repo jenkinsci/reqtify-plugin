@@ -38,6 +38,7 @@ import java.net.URL;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.servlet.http.HttpServletRequest;
@@ -73,7 +74,9 @@ public class Utils {
                 return path;
 	}
         
-        public JSONArray executeGET(String targetURL, Process reqtifyProcess, boolean buildRequest) throws ParseException, IOException, ReqtifyException {
+        public JSONArray executeGET(String targetURL, 
+                Process reqtifyProcess,
+                boolean buildRequest) throws ParseException, IOException, ReqtifyException {
               HttpURLConnection connection = null;
               JSONArray result = null;
               boolean isConnected = false;
@@ -115,9 +118,10 @@ public class Utils {
               } catch (MalformedURLException e) {
                   throw new MalformedURLException();
               } catch (IOException e) {                  
-                    if(!reqtifyProcess.isAlive()) {
-                        throw new ReqtifyException("");
-                    }
+                    if(!reqtifyProcess.isAlive() && reqtifyProcess.exitValue() == 1) {
+                      //Normal termination of Reqtify
+                      throw new ReqtifyException(""); //Abnormal termination of Reqtify
+                    } 
                     isConnected = false;  
                     count++;
                     
@@ -138,7 +142,7 @@ public class Utils {
         return result;
     }   
 
-    private boolean isLocalPortFree(int port) {
+    public boolean isLocalPortFree(int port) {
         try {
             new ServerSocket(port).close();
             return true;
