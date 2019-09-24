@@ -92,12 +92,8 @@ public class Utils {
                 connection.setRequestMethod("GET");
                 connection.setRequestProperty("Content-Type", "application/json");
 
-                if (connection.getResponseCode() != 200) {
-                    
-                    if(connection.getResponseCode() == 404)
-                         throw new ReqtifyException("No Reqtify project in the working directory");
-                    else
-                        throw new ReqtifyException(connection.getResponseMessage());
+                if (connection.getResponseCode() != 200) {                    
+                    throw new ReqtifyException(connection.getResponseMessage());
                 }
 
                 isConnected = true;      
