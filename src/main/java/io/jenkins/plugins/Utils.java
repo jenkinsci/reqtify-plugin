@@ -92,8 +92,20 @@ public class Utils {
                 connection.setRequestMethod("GET");
                 connection.setRequestProperty("Content-Type", "application/json");
 
-                if (connection.getResponseCode() != 200) {                    
-                    throw new ReqtifyException(connection.getResponseMessage());
+                if (connection.getResponseCode() != 200) {             
+                    if(connection.getErrorStream() != null) {
+                        isr = new InputStreamReader(connection.getErrorStream(),"UTF-8");
+                        br = new BufferedReader(isr); 
+                        StringBuilder errorResponse = new StringBuilder();
+                        String line = "";
+                        errorResponse.append(line);
+                        while ((line = br.readLine()) != null) {
+                                errorResponse.append(line).append("<br>");
+                        }                       
+                        throw new ReqtifyException(errorResponse.toString());                        
+                    } else {
+                         throw new ReqtifyException(connection.getResponseMessage());   
+                    }
                 }
 
                 isConnected = true;      
