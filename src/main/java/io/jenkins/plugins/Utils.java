@@ -99,9 +99,15 @@ public class Utils {
                         StringBuilder errorResponse = new StringBuilder();
                         String line = "";
                         errorResponse.append(line);
-                        while ((line = br.readLine()) != null) {
-                                errorResponse.append(line).append("<br>");
-                        }                       
+                        if(!buildRequest) {
+                            while ((line = br.readLine()) != null) {
+                                    errorResponse.append(line).append("<br>");
+                            }                              
+                        } else {
+                            while ((line = br.readLine()) != null) {
+                                    errorResponse.append(line).append("\n");
+                            }                            
+                        }                     
                         throw new ReqtifyException(errorResponse.toString());                        
                     } else {
                          throw new ReqtifyException(connection.getResponseMessage());   
