@@ -14,7 +14,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
@@ -23,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import jenkins.tasks.SimpleBuildStep;
-import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundSetter;
 import java.util.Iterator;
 import java.util.List;
@@ -52,15 +50,7 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
 	private String nameReport;
 	private String modelReport;
 	private String templateReport;
-	private String lang;
-        private static Utils utils;        
-        private static Map<String, Process> reqtfyLanguageProcessMap;        
-        private static Map<String, Integer> reqtifyLanguagePortMap;        
-        private static String tempDir;                        
-        private static String currentWorkspace;
-        private static String reqtifyPath; 
-        private static String reqtifyTimeoutValue = "1800";
-        
+	private String lang;        
 	public ReqtifyGenerateReport() {
             nameReport = "";          
 	}
@@ -190,35 +180,35 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                 String reqtifyLang = "eng";
                 Process reqtifyProcess;
                 int reqtifyPort;
-                if(reqtfyLanguageProcessMap.isEmpty()) {
+                String reqtifyPath = ReqtifyData.utils.findReqtifyPath();
+                if(ReqtifyData.reqtfyLanguageProcessMap.isEmpty()) {
                      //No reqtify is started
-                     reqtifyPort = utils.nextFreePort(4000,8000);
-                     String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang,"-timeout",reqtifyTimeoutValue};
+                     reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                     String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang,"-timeout",ReqtifyData.reqtifyTimeoutValue};
                      Process proc = Runtime.getRuntime().exec(args);                             
                      reqtifyProcess = proc;
-                     reqtfyLanguageProcessMap.put(reqtifyLang, proc);
-                     reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
-
-                 } else if(!reqtfyLanguageProcessMap.containsKey(reqtifyLang)) {
+                     ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                     ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
+                 } else if(!ReqtifyData.reqtfyLanguageProcessMap.containsKey(reqtifyLang)) {
                      //No Reqtify is started for this language
-                     reqtifyPort = utils.nextFreePort(4000,8000);
-                     String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang,"-timeout",reqtifyTimeoutValue};
+                     reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                     String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang,"-timeout",ReqtifyData.reqtifyTimeoutValue};
                      Process proc = Runtime.getRuntime().exec(args);                             
                      reqtifyProcess = proc;
-                     reqtfyLanguageProcessMap.put(reqtifyLang, proc);
-                     reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
+                     ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                     ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
                  } else {
-                     reqtifyProcess = reqtfyLanguageProcessMap.get(reqtifyLang);
-                     reqtifyPort = reqtifyLanguagePortMap.get(reqtifyLang);
-                     if(utils.isLocalPortFree(reqtifyPort)) {
-                        reqtfyLanguageProcessMap.remove(reqtifyLang);
-                        reqtifyLanguagePortMap.remove(reqtifyLang);
-                        reqtifyPort = utils.nextFreePort(4000,8000);
-                        String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",reqtifyTimeoutValue};
+                     reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
+                     reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);
+                     if(ReqtifyData.utils.isLocalPortFree(reqtifyPort)) {
+                        ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
+                        ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
+                        reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                        String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",ReqtifyData.reqtifyTimeoutValue};
                         Process proc = Runtime.getRuntime().exec(args);                             
                         reqtifyProcess = proc;
-                        reqtfyLanguageProcessMap.put(reqtifyLang, proc);
-                        reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);                                
+                        ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                        ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);                                
                     }                     
                  }
             
@@ -229,7 +219,7 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                                    "&aFileOut="+workspace.getRemote()+"\\"+URLEncoder.encode(this.nameReport+"."+FilenameUtils.getExtension(this.templateReport),"UTF-8");
 
                     try {                                   
-                        utils.executeGET(targetUrl, reqtifyProcess,true);
+                        ReqtifyData.utils.executeGET(targetUrl, reqtifyProcess,true);
                     } catch (ParseException ex) {
                         Logger.getLogger(ReqtifyGenerateReport.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (ConnectException e) {
@@ -240,13 +230,13 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                             listener.error(re.getMessage());
                             run.setResult(Result.FAILURE);                    
                         } else {                    
-                            Process p = reqtfyLanguageProcessMap.get(reqtifyLang);
+                            Process p = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
                             if(p.isAlive())
                                 p.destroy();
 
-                            reqtfyLanguageProcessMap.remove(reqtifyLang);
-                            reqtifyLanguagePortMap.remove(reqtifyLang);
-                            listener.error(utils.getLastLineOfFile(tempDir+"reqtifyLog_"+reqtifyPort+".log"));
+                            ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
+                            ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
+                            listener.error(ReqtifyData.utils.getLastLineOfFile(ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log"));
                             run.setResult(Result.FAILURE);                    
                         }
                     }
@@ -259,21 +249,17 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
 	 * @version 1.0
 	 * @since 1.0
 	 */
-	@Symbol("reqtifyReport")
+	//@Symbol("reqtifyReport")
 	@Extension
 	public static class DescriptorImpl extends BuildStepDescriptor<Builder> {
                 private List<String> models;
                 private List<String> templates;  
                 private String reqtifyError;
                 private int reqtifyPort;
+                private final String reqtifyPath = ReqtifyData .utils.findReqtifyPath();
                 public DescriptorImpl() throws IOException, InterruptedException, ScriptException {
-                    utils = new Utils();
-                    reqtfyLanguageProcessMap = new HashMap<>();
-                    reqtifyLanguagePortMap = new HashMap<>();
                     models = new ArrayList<>();
                     templates = new ArrayList<>();
-                    tempDir = System.getProperty("java.io.tmpdir");
-                    reqtifyPath = utils.findReqtifyPath();                                                 
                 }
                                       
                 private List<String> getModels() {
@@ -318,15 +304,16 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                         FilePath currentWorkspacePath;
                         String currentJob = "";
                         reqtifyError = "";
+                        String currentWorkspace = "";
                         List<String> modelsTemp = new ArrayList<>();
                         List<String> templatesTemp = new ArrayList<>(); 
                         Pattern pattern = Pattern.compile("job/(.*?)/descriptorByName");
-                        Matcher matcher = pattern.matcher(Jenkins.getInstance().getDescriptor().getDescriptorFullUrl());
+                        Matcher matcher = pattern.matcher(Jenkins.get().getDescriptor().getDescriptorFullUrl());
                         while (matcher.find()) {
                             currentJob = matcher.group(1);
                         }
 
-                        currentWorkspacePath = Jenkins.getInstance().getWorkspaceFor(Jenkins.getInstance().getItem(currentJob));                    
+                        currentWorkspacePath = Jenkins.get().getWorkspaceFor(Jenkins.get().getItem(currentJob));                    
                         
                         this.setModels(modelsTemp);
                         this.setTemplates(templatesTemp);
@@ -342,45 +329,45 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                         
                         String reqtifyLang = "eng";
                         Process reqtifyProcess;
-                        if(reqtfyLanguageProcessMap.isEmpty()) {
+                        if(ReqtifyData.reqtfyLanguageProcessMap.isEmpty()) {
                             //No reqtify is started
-                            reqtifyPort = utils.nextFreePort(4000,8000);
-                            String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",reqtifyTimeoutValue};
+                            reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                            String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",ReqtifyData.reqtifyTimeoutValue};
                             Process proc = Runtime.getRuntime().exec(args);                             
                             reqtifyProcess = proc;
-                            reqtfyLanguageProcessMap.put(reqtifyLang, proc);
-                            reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
+                            ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                            ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
                             
-                        } else if(!reqtfyLanguageProcessMap.containsKey(reqtifyLang)) {
+                        } else if(!ReqtifyData.reqtfyLanguageProcessMap.containsKey(reqtifyLang)) {
                             //No Reqtify is started for this language
-                            reqtifyPort = utils.nextFreePort(4000,8000);
-                            String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",reqtifyTimeoutValue};
+                            reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                            String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",ReqtifyData.reqtifyTimeoutValue};
                             Process proc = Runtime.getRuntime().exec(args);                             
                             reqtifyProcess = proc;
-                            reqtfyLanguageProcessMap.put(reqtifyLang, proc);
-                            reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
+                            ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                            ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
                         } else {                            
-                            reqtifyProcess = reqtfyLanguageProcessMap.get(reqtifyLang);                            
-                            reqtifyPort = reqtifyLanguagePortMap.get(reqtifyLang);  
+                            reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);                            
+                            reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);  
                             
-                            if(utils.isLocalPortFree(reqtifyPort)) {
+                            if(ReqtifyData.utils.isLocalPortFree(reqtifyPort)) {
                                 //Reqtify stopped normally
-                                reqtfyLanguageProcessMap.remove(reqtifyLang);
-                                reqtifyLanguagePortMap.remove(reqtifyLang);
-                                reqtifyPort = utils.nextFreePort(4000,8000);
-                                String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",reqtifyTimeoutValue};
+                                ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
+                                ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
+                                reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                                String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",ReqtifyData.reqtifyTimeoutValue};
                                 Process proc = Runtime.getRuntime().exec(args);                             
                                 reqtifyProcess = proc;
-                                reqtfyLanguageProcessMap.put(reqtifyLang, proc);
-                                reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);                                
+                                ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                                ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);                                
                             }
                         }
                                                                                                 
                         String targetURLModels = "http://localhost:"+reqtifyPort+"/jenkins/getReportModels?dir="+currentWorkspace;
                         String targetURLTemplates = "http://localhost:"+reqtifyPort+"/jenkins/getReportTemplates?dir="+currentWorkspace;
                         try {
-                            JSONArray modelsResult = utils.executeGET(targetURLModels, reqtifyProcess,false);
-                            JSONArray templatesResult = utils.executeGET(targetURLTemplates, reqtifyProcess, false);
+                            JSONArray modelsResult = ReqtifyData.utils.executeGET(targetURLModels, reqtifyProcess,false);
+                            JSONArray templatesResult = ReqtifyData.utils.executeGET(targetURLTemplates, reqtifyProcess, false);
                             Iterator<JSONObject> itr = modelsResult.iterator();
                             //Models
                             while (itr.hasNext()) {
@@ -406,13 +393,13 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                             if(re.getMessage().length() > 0) {
                                 reqtifyError = re.getMessage();
                             } else {  
-                                Process p = reqtfyLanguageProcessMap.get(reqtifyLang);
+                                Process p = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
                                 if(p.isAlive())
                                     p.destroy();
 
-                                reqtfyLanguageProcessMap.remove(reqtifyLang);
-                                reqtifyLanguagePortMap.remove(reqtifyLang);
-                                reqtifyError = utils.getLastLineOfFile(tempDir+"reqtifyLog_"+reqtifyPort+".log");
+                                ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
+                                ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
+                                reqtifyError = ReqtifyData.utils.getLastLineOfFile(ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log");
                             } 
                         }                                      
                     } catch(IOException | InterruptedException | AccessDeniedException e) {
