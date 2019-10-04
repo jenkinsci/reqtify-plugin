@@ -23,7 +23,6 @@
  */
 package io.jenkins.plugins;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,6 +30,7 @@ import java.util.Map;
  *
  * @author 3DS
  */
+@edu.umd.cs.findbugs.annotations.SuppressFBWarnings("MS_SHOULD_BE_FINAL")
 public class ReqtifyData {
         public static Utils utils = new Utils();       
         public static Map<String, Process> reqtfyLanguageProcessMap = new HashMap<>();
