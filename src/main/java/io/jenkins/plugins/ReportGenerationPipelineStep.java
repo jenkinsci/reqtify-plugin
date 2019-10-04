@@ -26,6 +26,8 @@ package io.jenkins.plugins;
 import com.google.common.collect.ImmutableSet;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.model.Job;
+import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
@@ -42,11 +44,12 @@ import javax.annotation.Nonnull;
 import javax.script.ScriptException;
 import jenkins.model.Jenkins;
 import org.acegisecurity.AccessDeniedException;
+import org.apache.commons.io.FilenameUtils;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
-import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
+import org.jenkinsci.plugins.workflow.steps.SynchronousStepExecution;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -57,19 +60,21 @@ import org.kohsuke.stapler.bind.JavaScriptMethod;
  *
  * @author 3DS
  */
+@edu.umd.cs.findbugs.annotations.SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
+
 public class ReportGenerationPipelineStep extends Step {
 
     private static final Logger logger = Logger.getLogger(ReportGenerationPipelineStep.class.getName());
     
-    private String nameReport;
-    private String modelReport;
-    private String templateReport;
-    private String lang;
+    private static String nameReport;
+    private static String modelReport;
+    private static String templateReport;
+    private static String lang;
         
 
     @Nonnull
     public String getNameReport() {
-            return this.nameReport;
+            return ReportGenerationPipelineStep.nameReport;
     }
 
     /**
@@ -77,7 +82,7 @@ public class ReportGenerationPipelineStep extends Step {
      * @since 1.0
      */
     public String getModelReport() {
-            return this.modelReport;
+            return ReportGenerationPipelineStep.modelReport;
     }
 
     /**
@@ -85,7 +90,7 @@ public class ReportGenerationPipelineStep extends Step {
      * @since 1.0
      */
     public String getTemplateReport() {
-            return this.templateReport;
+            return ReportGenerationPipelineStep.templateReport;
     }
 
     /**
@@ -93,29 +98,29 @@ public class ReportGenerationPipelineStep extends Step {
      * @since 1.0
      */
     public String getLang() {
-            return this.lang;
+            return ReportGenerationPipelineStep.lang;
     }
     
     @DataBoundSetter
     public void setNameReport(@Nonnull String nameReport) {
-            this.nameReport = nameReport;
+            ReportGenerationPipelineStep.nameReport = nameReport;
     }
 
     @DataBoundSetter
     public void setModelReport(String modelReport) {
-            this.modelReport = modelReport;
+            ReportGenerationPipelineStep.modelReport = modelReport;
     }
 
     @DataBoundSetter
     public void setTemplateReport(String templateReport) {
-            this.templateReport = templateReport;
+            ReportGenerationPipelineStep.templateReport = templateReport;
     }    
 
     @DataBoundConstructor
     public ReportGenerationPipelineStep(String nameReport, String modelReport, String templateReport, String lang) {
-            this.nameReport = nameReport;
-            this.modelReport = modelReport;
-            this.templateReport = templateReport;
+            ReportGenerationPipelineStep.nameReport = nameReport;
+            ReportGenerationPipelineStep.modelReport = modelReport;
+            ReportGenerationPipelineStep.templateReport = templateReport;
     }    
     @Override
     public StepExecution start(StepContext context) throws Exception {
@@ -343,7 +348,7 @@ public class ReportGenerationPipelineStep extends Step {
         }        
     }
     
-    private static class ReportGenerationPipelineStepExecution extends SynchronousNonBlockingStepExecution<ReportGenerationPipelineStep> {
+    private static class ReportGenerationPipelineStepExecution extends SynchronousStepExecution<String> {
         private static final long serialVersionUID = 1L;
 
         private transient final ReportGenerationPipelineStep step;
@@ -353,8 +358,78 @@ public class ReportGenerationPipelineStep extends Step {
         }
 
         @Override
-        protected ReportGenerationPipelineStep run() throws Exception {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+        protected String run() throws Exception {
+            Run run = getContext().get(Run.class);    
+            TaskListener listener = getContext().get(TaskListener.class);
+            Job job = getContext().get(Job.class);
+            FilePath currentWorkspacePath;
+            currentWorkspacePath = Jenkins.get().getWorkspaceFor(Jenkins.get().getItem(job.getName()));                    
+                        
+            String reqtifyLang = "eng";
+            Process reqtifyProcess;
+            int reqtifyPort;
+            String reqtifyPath = ReqtifyData.utils.findReqtifyPath();
+            if(ReqtifyData.reqtfyLanguageProcessMap.isEmpty()) {
+                 //No reqtify is started
+                 reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                 String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang,"-timeout",ReqtifyData.reqtifyTimeoutValue};
+                 Process proc = Runtime.getRuntime().exec(args);                             
+                 reqtifyProcess = proc;
+                 ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                 ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
+             } else if(!ReqtifyData.reqtfyLanguageProcessMap.containsKey(reqtifyLang)) {
+                 //No Reqtify is started for this language
+                 reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                 String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang,"-timeout",ReqtifyData.reqtifyTimeoutValue};
+                 Process proc = Runtime.getRuntime().exec(args);                             
+                 reqtifyProcess = proc;
+                 ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                 ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
+             } else {
+                 reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
+                 reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);
+                 if(ReqtifyData.utils.isLocalPortFree(reqtifyPort)) {
+                    ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
+                    ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
+                    reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+                    String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",ReqtifyData.reqtifyTimeoutValue};
+                    Process proc = Runtime.getRuntime().exec(args);                             
+                    reqtifyProcess = proc;
+                    ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+                    ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);                                
+                }                     
+             }
+
+
+            String targetUrl = "http://localhost:"+reqtifyPort+"/jenkins/generateReport?dir="+currentWorkspacePath.getRemote()+
+                               "&aReportModel="+URLEncoder.encode(modelReport,"UTF-8")+
+                               "&aReportTemplate="+URLEncoder.encode(templateReport, "UTF-8")+
+                               "&aFileOut="+currentWorkspacePath.getRemote()+"\\"+URLEncoder.encode(nameReport+"."+FilenameUtils.getExtension(templateReport),"UTF-8");
+
+            try {                                   
+                ReqtifyData.utils.executeGET(targetUrl, reqtifyProcess,true);
+            } catch (ParseException ex) {
+                Logger.getLogger(ReqtifyGenerateReport.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (ConnectException e) {
+                listener.error(e.getMessage());
+                run.setResult(Result.FAILURE);
+            } catch(ReqtifyException re) {
+                if(re.getMessage().length() > 0) {
+                    listener.error(re.getMessage());
+                    run.setResult(Result.FAILURE);                    
+                } else {                    
+                    Process p = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
+                    if(p.isAlive())
+                        p.destroy();
+
+                    ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
+                    ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
+                    listener.error(ReqtifyData.utils.getLastLineOfFile(ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log"));
+                    run.setResult(Result.FAILURE);                    
+                }
+            }            
+            return "";
         }
            
     }
