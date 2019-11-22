@@ -17,7 +17,7 @@
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>reqtify</artifactId>
-    <version>0.9.9-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>hpi</packaging>
     <properties>
         <jenkins.version>2.138.4</jenkins.version>
@@ -70,6 +70,6 @@
 	  <connection>scm:git:ssh://github.com/jenkinsci/reqtify-plugin.git</connection>
 	  <developerConnection>scm:git:ssh://git@github.com/jenkinsci/reqtify-plugin.git</developerConnection>
 	  <url>https://github.com/jenkinsci/reqtify-plugin</url>
-	  <tag>HEAD</tag>
+	  <tag>1.0.0</tag>
   </scm>	
 </project>
