@@ -82,6 +82,7 @@ public class Utils {
                 return path;
 	}
         
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
         public Object executeGET(String targetURL, 
                 Process reqtifyProcess,
                 boolean buildRequest) throws ParseException, IOException, ReqtifyException {
@@ -230,7 +231,8 @@ public class Utils {
         Locale currentLocale = req.getLocale();
         return currentLocale.toLanguageTag().toLowerCase();
     }
-               
+    
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     public static List getFunctionArgumentsData(String currentJob, boolean report) {
         List selectedArguments = new ArrayList();
         try {
@@ -256,6 +258,7 @@ public class Utils {
         return selectedArguments;
     }    
     
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     public static String getSavedFunctionName(String currentJob) {
         String functionName = "";
          try {
@@ -273,6 +276,7 @@ public class Utils {
         }
     }
 
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     public static String getSavedReportName(String currentJob) {
         String reportName = "";
          try {
@@ -307,8 +311,10 @@ public class Utils {
             
             //Create workspace folder if not exists
             File wsDirectory = new File(currentWorkspace);
-            if(!wsDirectory.exists()) {
-                wsDirectory.mkdirs();
+            boolean wsExists = wsDirectory.exists();
+            if(!wsExists) {
+                boolean created = wsDirectory.mkdirs();    
+                if(!created) return currentWorkspace;
             }
         } catch (UnsupportedEncodingException ex) {
             Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);

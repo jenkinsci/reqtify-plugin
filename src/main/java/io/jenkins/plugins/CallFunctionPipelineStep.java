@@ -74,6 +74,7 @@ public class CallFunctionPipelineStep extends Step{
         return CallFunctionPipelineStep.argument;
     }
     
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("EI_EXPOSE_REP")
     public String[] getArgumentList() {
         return CallFunctionPipelineStep.argumentList;
     }
@@ -149,6 +150,7 @@ public class CallFunctionPipelineStep extends Step{
             return ImmutableSet.of(Run.class, TaskListener.class);
         }
         
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("SBSC_USE_STRINGBUFFER_CONCATENATION")
         @JavaScriptMethod
         public List<String> renderParamUI(String functionName, String currentJob) {
             reqtifyFunctionError = "";
@@ -339,7 +341,7 @@ public class CallFunctionPipelineStep extends Step{
         }
         
         @Override
-        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("SBSC_USE_STRINGBUFFER_CONCATENATION")
         protected String run() throws Exception {
             Run run = getContext().get(Run.class);    
             TaskListener listener = getContext().get(TaskListener.class);

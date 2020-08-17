@@ -88,6 +88,7 @@ public class ReportGenerationPipelineStep extends Step {
             return ReportGenerationPipelineStep.lang;
     }
     
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("EI_EXPOSE_REP")
     public String[] getReportArgumentList() {
         return ReportGenerationPipelineStep.reportArgumentList;
     }
@@ -140,7 +141,8 @@ public class ReportGenerationPipelineStep extends Step {
         public String getReqtifyError() {
             return reqtifyError;
         }    
- 
+        
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("SBSC_USE_STRINGBUFFER_CONCATENATION")
         @JavaScriptMethod
         public List<String> renderReportParamUI(String functionName, String currentJob) {
             reqtifyError = "";
@@ -390,7 +392,7 @@ public class ReportGenerationPipelineStep extends Step {
         }
 
         @Override
-        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("SBSC_USE_STRINGBUFFER_CONCATENATION")
         protected String run() throws Exception {
             Run run = getContext().get(Run.class);    
             TaskListener listener = getContext().get(TaskListener.class);

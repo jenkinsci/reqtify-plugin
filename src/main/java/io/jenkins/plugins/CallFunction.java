@@ -73,6 +73,7 @@ public class CallFunction extends Builder implements SimpleBuildStep {
         
     }
     
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("EI_EXPOSE_REP2")
     @DataBoundConstructor
     public CallFunction(String functionName, String[] argumentList) {
         this.functionName = functionName;
@@ -87,6 +88,7 @@ public class CallFunction extends Builder implements SimpleBuildStep {
         return this.argument;
     }
     
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("EI_EXPOSE_REP")
     public String[] getArgumentList() {
         return this.argumentList;
     }
@@ -102,6 +104,7 @@ public class CallFunction extends Builder implements SimpleBuildStep {
             this.argument = argument;
     }    
     
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("EI_EXPOSE_REP2")
     @DataBoundSetter
     public void setArgumentList(@Nonnull String[] argumentList) {
             this.argumentList = argumentList;
@@ -111,7 +114,8 @@ public class CallFunction extends Builder implements SimpleBuildStep {
     public CallFunction.DescriptorImpl getDescriptor() {
         return (CallFunction.DescriptorImpl)super.getDescriptor();
     }
-        
+    
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("SBSC_USE_STRINGBUFFER_CONCATENATION")
     @Override
     public void perform(Run run, FilePath fp, Launcher lnchr, TaskListener listener) throws InterruptedException, IOException {
         String reqtifyLang = "eng";
@@ -263,6 +267,7 @@ public class CallFunction extends Builder implements SimpleBuildStep {
             return Utils.getSavedFunctionName(currentJob);
         }
                 
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("SBSC_USE_STRINGBUFFER_CONCATENATION")
         @JavaScriptMethod
         public List<String> renderParamUI(String functionName, String currentJob) {
             reqtifyFunctionError = "";

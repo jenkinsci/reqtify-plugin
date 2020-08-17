@@ -74,6 +74,7 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
             nameReport = "";
 	}
 
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("EI_EXPOSE_REP2")
 	@DataBoundConstructor
 	public ReqtifyGenerateReport(String nameReport, String modelReport, String templateReport,String[] reportArgumentList) {
 		this.nameReport = nameReport;
@@ -98,7 +99,8 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
 	public String getLang() {
 		return this.lang;
 	}
-	
+        
+	@edu.umd.cs.findbugs.annotations.SuppressFBWarnings("EI_EXPOSE_REP")
         public String[] getReportArgumentList() {
             return this.reportArgumentList;
         }
@@ -132,7 +134,8 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                 }
 		return sb.toString();
 	}
-		                   
+	
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("SBSC_USE_STRINGBUFFER_CONCATENATION")
 	@Override
 	public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
                 String reqtifyLang = "eng";
@@ -341,6 +344,7 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                     return Utils.getSavedReportName(currentJob);
                 } 
                 
+                @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("SBSC_USE_STRINGBUFFER_CONCATENATION")
                 @JavaScriptMethod
                 public List<String> renderReportParamUI(String functionName, String currentJob) {
                     reqtifyError = "";

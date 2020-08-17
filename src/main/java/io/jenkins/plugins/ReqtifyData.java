@@ -36,5 +36,6 @@ public class ReqtifyData {
         public static String reqtifyTimeoutValue = "1800";
         //public static String pluginEnv = "DEBUG";
         public static String pluginEnv = "RELEASE";
+        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("MS_PKGPROTECT")
         public static String cookie = "" ;
 }
