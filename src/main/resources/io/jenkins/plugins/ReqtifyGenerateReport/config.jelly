@@ -9,11 +9,23 @@
     </f:entry>
         
     <f:entry title="${%Model of report}" field="modelReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-model.html">
-      <f:select />
+      <f:select id="reports" onchange="getReportParameterValues()" />
+      <script>
+            var i = setInterval(function() { 
+                var isPending = document.getElementById("reports").hasClassName("select-ajax-pending");
+                if(!isPending) { clearInterval(i); showReqtifyError(); }
+            }, 1000);                    
+      </script>          
     </f:entry>
 
     <f:entry title="${%Template of report}" field="templateReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-template.html">
-      <f:select />
+      <f:select id="templates"/>
+      <script>
+            var i = setInterval(function() { 
+                var isPending = document.getElementById("templates").hasClassName("select-ajax-pending");
+                if(!isPending) { clearInterval(i); showReqtifyError(); }
+            }, 1000);                    
+      </script>          
     </f:entry>
 
     <f:entry field="reqtifyError">
@@ -21,13 +33,51 @@
     </f:entry>    
     
   <script>
-        backend.getReqtifyError(function(reqtifyError){
-            if(reqtifyError === undefined || reqtifyError === null) {
-                document.getElementById('reqtifyErrorDiv').style.display = 'none';   
-            } else {
-                document.getElementById('reqtifyErrorDiv').style.display = 'block';
-                document.getElementById('reqtifyErrorSpan').innerHTML = reqtifyError.responseJSON;   
-            }            
-        });                
+         var url = window.location.pathname;
+         var currentJob = url.match(new RegExp("job/(.*?)/"))[1];
+         function getReportParameterValues() {
+            var e = document.getElementById("reports");
+            var functionName = e.options[e.selectedIndex].value;
+            backend.renderReportParamUI(functionName,currentJob, function(htmlList){
+                document.querySelectorAll(".report-param").forEach(el => el.remove());
+                var myJSON = JSON.stringify(htmlList);
+                var res = JSON.parse(myJSON);     
+                var paramValues = JSON.parse(res.responseJSON);
+                var tr = document.getElementById("reports").parentElement.parentElement;
+                paramValues.forEach((html) => {
+                  tr.insertAdjacentHTML('afterend', html);
+                });    
+                showReqtifyError();
+            });
+          }
+        
+          setTimeout(function() { 
+                backend.getSavedReport(currentJob, function(reportName){
+                if(reportName.responseJSON !== "") {
+                    backend.renderReportParamUI(reportName.responseJSON,currentJob, function(htmlList){
+                        document.querySelectorAll(".report-param").forEach(el => el.remove());
+                        var myJSON = JSON.stringify(htmlList);
+                        var res = JSON.parse(myJSON);     
+                        var paramValues = JSON.parse(res.responseJSON);
+                        var tr = document.getElementById("reports").parentElement.parentElement;
+                        paramValues.forEach((html) => {
+                          tr.insertAdjacentHTML('afterend', html);
+                        });
+                        showReqtifyError();
+                    });                    
+                }
+          });     
+        }, 1000);
+          
+          function showReqtifyError() {
+            backend.getReqtifyError(function(reqtifyError){
+                if(reqtifyError === undefined || reqtifyError === null) {
+                    document.getElementById('reqtifyErrorDiv').style.display = 'none';   
+                } else {
+                    document.getElementById('reqtifyErrorDiv').style.display = 'block';
+                    document.getElementById('reqtifyErrorSpan').innerHTML = reqtifyError.responseJSON;   
+                }            
+            });        
+          }                
   </script>
 </j:jelly>

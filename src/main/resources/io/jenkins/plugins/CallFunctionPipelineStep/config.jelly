@@ -1,0 +1,73 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:html="jelly:html" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <st:bind var="backendFunction" value="${descriptor}"/> 
+    <f:invisibleEntry>
+	<f:textbox field="lang" value="${%eng}" default="${%eng}"/>
+     </f:invisibleEntry>
+               
+    <f:entry title="${%Funation Name}" field="functionName" help="/plugin/reqtify/help/CallFunction/help-functionList.html">
+      <f:select id="functions" onchange="getParameterValues()" onload="showReqtifyError()" />
+      <script>
+            var i = setInterval(function() { 
+                var isPending = document.getElementById("functions").hasClassName("select-ajax-pending");
+                if(!isPending) { clearInterval(i); showReqtifyFunctionError(); }
+            }, 1000);                    
+      </script>
+    </f:entry> 
+    
+    <f:entry field="reqtifyFunctionError">
+        <div id="reqtifyFunctionErrorDiv"><span style="color:red;" id="reqtifyFunctionErrorSpan"></span></div>
+    </f:entry>
+       
+    <script type="text/javascript" >    
+         var url = window.location.pathname;
+         var currentJob = url.match(new RegExp("job/(.*?)/"))[1];
+        
+         function getParameterValues() {
+            var e = document.getElementById("functions");
+            var functionName = e.options[e.selectedIndex].value;
+            backendFunction.renderParamUI(functionName,currentJob, function(htmlList){
+                document.querySelectorAll(".function-param").forEach(el => el.remove());
+                var myJSON = JSON.stringify(htmlList);
+                var res = JSON.parse(myJSON);     
+                var paramValues = JSON.parse(res.responseJSON);
+                var tr = document.getElementById("functions").parentElement.parentElement;
+                paramValues.forEach((html) => {
+                  tr.insertAdjacentHTML('afterend', html);
+                });          
+                showReqtifyFunctionError();
+            });
+          }
+        
+          setTimeout(function() { 
+                backendFunction.getSavedFunction(currentJob, function(functionName){
+                console.log(functionName.responseJSON);
+                console.log(typeof functionName.responseJSON);
+                if(functionName.responseJSON !== "") {
+                    backendFunction.renderParamUI(functionName.responseJSON,currentJob, function(htmlList){
+                        document.querySelectorAll(".function-param").forEach(el => el.remove());
+                        var myJSON = JSON.stringify(htmlList);
+                        var res = JSON.parse(myJSON);     
+                        var paramValues = JSON.parse(res.responseJSON);
+                        var tr = document.getElementById("functions").parentElement.parentElement;
+                        paramValues.forEach((html) => {
+                          tr.insertAdjacentHTML('afterend', html);
+                        }); 
+                        showReqtifyFunctionError();
+                    });                    
+                }
+          });     
+        }, 1000);   
+        
+          function showReqtifyFunctionError() {
+            backendFunction.getReqtifyFunctionError(function(reqtifyFunctionError){
+                if(reqtifyFunctionError === undefined || reqtifyFunctionError === null) {
+                    document.getElementById('reqtifyFunctionErrorDiv').style.display = 'none';   
+                } else {
+                    document.getElementById('reqtifyFunctionErrorDiv').style.display = 'block';
+                    document.getElementById('reqtifyFunctionErrorSpan').innerHTML = reqtifyFunctionError.responseJSON;   
+                }            
+            });        
+          }                
+    </script>    
+</j:jelly>

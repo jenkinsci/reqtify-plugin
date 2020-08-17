@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 NKR8.
+ * Copyright 2020 Dassault Systèmes.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,36 +30,44 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
+import org.w3c.dom.Document;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import jenkins.model.Jenkins;
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.kohsuke.stapler.Stapler;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  *
- * @author NKR8
+ * @author Dassault Systèmes
  */
 public class Utils {
-    	/**
-	 * We find the path where reqtify is installed with regedit and return it.
-	 * 
-	 * @return Return the path of reqtify.exe (for windows only)
-         * @throws java.io.IOException
-	 * @since 1.0
-	 */
-	public String findReqtifyPath() throws IOException {
+    
+	public static String findReqtifyPath() throws IOException {
 		String path;
 		Process proc=Runtime.getRuntime().exec("reg query HKCR\\Reqtify.Application\\CLSID");
                 InputStream in = proc.getInputStream();
@@ -74,11 +82,11 @@ public class Utils {
                 return path;
 	}
         
-        public JSONArray executeGET(String targetURL, 
+        public Object executeGET(String targetURL, 
                 Process reqtifyProcess,
                 boolean buildRequest) throws ParseException, IOException, ReqtifyException {
               HttpURLConnection connection = null;
-              JSONArray result = null;
+              Object result = null;
               boolean isConnected = false;
               int MAX_CONNECTIONS_REQUESTS = 20;
               int count = 0;
@@ -91,6 +99,7 @@ public class Utils {
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("GET");
                 connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Cookie", ReqtifyData.cookie);
 
                 if (connection.getResponseCode() != 200) {             
                     if(connection.getErrorStream() != null) {
@@ -113,22 +122,30 @@ public class Utils {
                          throw new ReqtifyException(connection.getResponseMessage());   
                     }
                 }
-
+                ReqtifyData.cookie = connection.getHeaderField("Set-Cookie");
                 isConnected = true;      
                 isr = new InputStreamReader((connection.getInputStream()),"UTF-8");
                 br = new BufferedReader(isr);                
-                                                              
-                if(!buildRequest) {
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                            response.append(line);
-                    }                    
-                    JSONParser parser = new JSONParser();
-                    result = (JSONArray)parser.parse(response.toString());                
-                } else {
-                    result = new JSONArray();
+                
+                if(targetURL.contains("openProject")) {
+                    return result;
                 }
+                
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                        response.append(line);
+                }                    
+                JSONParser parser = new JSONParser();
+                result = parser.parse(response.toString());
+                if(result.getClass().getName().contains("JSONArray")) {
+                    result = (JSONArray)parser.parse(response.toString()); 
+                } else if(result.getClass().getName().contains("JSONObject")) {
+                    result = (JSONObject)parser.parse(response.toString());
+                } else if(result.getClass().getName().contains("String")) {
+                    result = (String)parser.parse(response.toString());
+                }
+                 
               } catch (MalformedURLException e) {
                   throw new MalformedURLException();
               } catch (IOException e) {                  
@@ -192,32 +209,144 @@ public class Utils {
         return false;
     }
     
-    	/**
-	 * Return the last line of file like a log file.
-	 * 
-	 * @param path the path of the file we want to read
-	 * @return Return the last line of file
-	 * @since 1.0
-	 */
-	public String getLastLineOfFile(String path) {
-		Scanner scanner;
-		try {
-			scanner = new Scanner(new File(path),"utf-8");
-		} catch (FileNotFoundException e) {
-			return("File not found");
-		}
-	    StringBuilder error = new StringBuilder();
-	    while (scanner.hasNextLine()) {
-	        error.append(scanner.nextLine()).append("<br>");
-	    }
-            
-	    scanner.close();
-		return error.toString();
-	}
-        
-        public String getBrowserLanguage() {
-            HttpServletRequest req = Stapler.getCurrentRequest();
-            Locale currentLocale = req.getLocale();
-            return currentLocale.toLanguageTag().toLowerCase();
+    public String getLastLineOfFile(String path) {
+            Scanner scanner;
+            try {
+                    scanner = new Scanner(new File(path),"utf-8");
+            } catch (FileNotFoundException e) {
+                    return("File not found");
+            }
+        StringBuilder error = new StringBuilder();
+        while (scanner.hasNextLine()) {
+            error.append(scanner.nextLine()).append("<br>");
         }
+
+        scanner.close();
+            return error.toString();
+    }
+        
+    public String getBrowserLanguage() {
+        HttpServletRequest req = Stapler.getCurrentRequest();
+        Locale currentLocale = req.getLocale();
+        return currentLocale.toLanguageTag().toLowerCase();
+    }
+               
+    public static List getFunctionArgumentsData(String currentJob, boolean report) {
+        List selectedArguments = new ArrayList();
+        try {
+            File file = Paths.get(Jenkins.get().getItem(currentJob).getRootDir().getAbsolutePath(),"config.xml").toFile(); 
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document document = db.parse(file);
+
+            Node argumentListNode = report == true? document.getElementsByTagName("reportArgumentList").item(0) : document.getElementsByTagName("argumentList").item(0);
+            if(argumentListNode != null) {
+                NodeList childs = argumentListNode.getChildNodes();
+                for(int i=0; i< childs.getLength(); i++) {
+                    Node node = childs.item(i);
+                    if(node.getNodeName().equals("string"))
+                        selectedArguments.add(node.getTextContent());
+                }              
+            }
+        } catch (FileNotFoundException ex) {
+            return selectedArguments;
+        } catch (IOException | ParserConfigurationException | SAXException ex) {
+            return selectedArguments;
+        }
+        return selectedArguments;
+    }    
+    
+    public static String getSavedFunctionName(String currentJob) {
+        String functionName = "";
+         try {
+            File file = Paths.get(Jenkins.get().getItem(currentJob).getRootDir().getAbsolutePath(),"config.xml").toFile(); 
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document document = db.parse(file);
+
+            Node functionNameNode = document.getElementsByTagName("functionName").item(0);
+            return (functionNameNode != null) ? functionNameNode.getTextContent(): functionName;
+        } catch (FileNotFoundException ex) {
+            return functionName;
+        } catch (IOException | ParserConfigurationException | SAXException ex) {
+            return functionName;
+        }
+    }
+
+    public static String getSavedReportName(String currentJob) {
+        String reportName = "";
+         try {
+            File file = Paths.get(Jenkins.get().getItem(currentJob).getRootDir().getAbsolutePath(),"config.xml").toFile(); 
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document document = db.parse(file);
+
+            Node reportNameNode = document.getElementsByTagName("modelReport").item(0);
+            return (reportNameNode != null) ? reportNameNode.getTextContent(): reportName;
+        } catch (FileNotFoundException ex) {
+            return reportName;
+        } catch (IOException | ParserConfigurationException | SAXException ex) {
+            return reportName;
+        }
+    }    
+    
+    public static String getWorkspacePath(String currentJob) {
+        String currentWorkspace = "";
+        try {           
+            if(ReqtifyData.pluginEnv.equals("DEBUG")) {
+                currentWorkspace = Jenkins.get().getRootPath()+"\\jobs\\"+currentJob+"\\workspace";             
+                if(currentWorkspace.contains(" ")) {
+                  currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
+                }               
+            } else {
+                currentWorkspace = Jenkins.get().getRootPath()+"\\workspace\\"+currentJob;             
+                if(currentWorkspace.contains(" ")) {
+                  currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
+                }
+            }
+            
+            //Create workspace folder if not exists
+            File wsDirectory = new File(currentWorkspace);
+            if(!wsDirectory.exists()) {
+                wsDirectory.mkdirs();
+            }
+        } catch (UnsupportedEncodingException ex) {
+            Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+        } 
+       return currentWorkspace;
+    }
+    
+    public static void initReqtifyProcess() throws IOException {
+        String reqtifyLang = "eng";
+        int reqtifyPort;
+        String reqtifyPath = findReqtifyPath();
+        if(ReqtifyData.reqtfyLanguageProcessMap.isEmpty()) {
+           //No reqtify is started
+           reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+           String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",ReqtifyData.reqtifyTimeoutValue};
+           Process proc = Runtime.getRuntime().exec(args);
+           ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+           ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
+
+       } else if(!ReqtifyData.reqtfyLanguageProcessMap.containsKey(reqtifyLang)) {
+           //No Reqtify is started for this language
+           reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+           String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",ReqtifyData.reqtifyTimeoutValue};
+           Process proc = Runtime.getRuntime().exec(args);
+           ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+           ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);
+       } else {                                           
+           reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);  
+           if(ReqtifyData.utils.isLocalPortFree(reqtifyPort)) {
+               //Reqtify stopped normally
+               ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
+               ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
+               reqtifyPort = ReqtifyData.utils.nextFreePort(4000,8000);
+               String[] args = {reqtifyPath,"-http",String.valueOf(reqtifyPort),"-logfile",ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log", "-l", reqtifyLang, "-timeout",ReqtifyData.reqtifyTimeoutValue};
+               Process proc = Runtime.getRuntime().exec(args);
+               ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
+               ReqtifyData.reqtifyLanguagePortMap.put(reqtifyLang, reqtifyPort);                                
+           }
+       }       
+    }
 }

@@ -31,7 +31,6 @@ import hudson.model.TaskListener;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,7 +46,6 @@ import javax.annotation.Nonnull;
 import javax.script.ScriptException;
 import jenkins.model.Jenkins;
 import org.acegisecurity.AccessDeniedException;
-import org.apache.commons.io.FilenameUtils;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -61,91 +59,101 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.bind.JavaScriptMethod;
 
 @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
-public class ReportGenerationPipelineStep extends Step {
-
+public class CallFunctionPipelineStep extends Step{
+    
     private static final Logger logger = Logger.getLogger(ReportGenerationPipelineStep.class.getName());
-    
-    private static String nameReport;
-    private static String modelReport;
-    private static String templateReport;
-    private static String[] reportArgumentList;
-    private static String lang;
-        
-    @Nonnull
-    public String getNameReport() {
-            return ReportGenerationPipelineStep.nameReport;
+    private static String functionName;
+    private static String argument;
+    private static String[] argumentList;    
+
+    public String getFunctionName() {
+        return CallFunctionPipelineStep.functionName;
     }
 
-    public String getModelReport() {
-            return ReportGenerationPipelineStep.modelReport;
-    }
-
-    public String getTemplateReport() {
-            return ReportGenerationPipelineStep.templateReport;
-    }
-
-    public String getLang() {
-            return ReportGenerationPipelineStep.lang;
+    public String getArgument() {
+        return CallFunctionPipelineStep.argument;
     }
     
-    public String[] getReportArgumentList() {
-        return ReportGenerationPipelineStep.reportArgumentList;
+    public String[] getArgumentList() {
+        return CallFunctionPipelineStep.argumentList;
+    }
+    
+    
+    @DataBoundSetter
+    public void setFunctionName(@Nonnull String functionName) {
+            CallFunctionPipelineStep.functionName = functionName;
     }
     
     @DataBoundSetter
-    public void setNameReport(@Nonnull String nameReport) {
-            ReportGenerationPipelineStep.nameReport = nameReport;
-    }
-
-    @DataBoundSetter
-    public void setModelReport(String modelReport) {
-            ReportGenerationPipelineStep.modelReport = modelReport;
-    }
-
-    @DataBoundSetter
-    public void setTemplateReport(String templateReport) {
-            ReportGenerationPipelineStep.templateReport = templateReport;
+    public void setArgument(@Nonnull String argument) {
+            CallFunctionPipelineStep.argument = argument;
     }    
+    
+    @DataBoundSetter
+    public void setArgumentList(@Nonnull String[] argumentList) {
+            CallFunctionPipelineStep.argumentList = argumentList;
+    }  
 
     @DataBoundConstructor
-    public ReportGenerationPipelineStep(String nameReport, String modelReport, String templateReport, String[] reportArgumentList) {
-            ReportGenerationPipelineStep.nameReport = nameReport;
-            ReportGenerationPipelineStep.modelReport = modelReport;
-            ReportGenerationPipelineStep.templateReport = templateReport;
-            ReportGenerationPipelineStep.reportArgumentList = reportArgumentList;
+    public CallFunctionPipelineStep(String functionName, String[] argumentList) {
+        CallFunctionPipelineStep.functionName = functionName;
+        CallFunctionPipelineStep.argumentList = argumentList;
     }    
+    
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        return new ReportGenerationPipelineStepExecution(this, context); 
+        return new CallFunctionPipelineStepExecution(this, context); 
     }
-	
+    
     @Extension
     public static class DescriptorImpl extends StepDescriptor {
-        private String reqtifyError;
-        private final Map<String,JSONArray> functionParamterMap;
+
+        private String reqtifyFunctionError;
+        private List<String> functions;
+        private final Map<String,JSONArray> functionParamterMap;  
         public DescriptorImpl() throws IOException, InterruptedException, ScriptException {
+            functions = new ArrayList<>();
             functionParamterMap = new HashMap<>();
-        }        
+        }
+        
+        private List<String> getFunctions() {
+            return this.functions;
+        }
+                
+        private void setFunctions(List<String> functions) {
+            this.functions = functions;
+        }
+
+        @Override
+        public String getFunctionName() {
+            return "reqtifyFunction";
+        }
+
+        @Override
+        public String getDisplayName() {
+            return io.jenkins.plugins.Messages.ReqtifyCallFunction_DisplayName();
+        }   
+        
+        @JavaScriptMethod
+        public String getReqtifyFunctionError() {
+            return reqtifyFunctionError;
+        }      
+        
+        @JavaScriptMethod
+        public String getSavedFunction(String currentJob) {
+            return Utils.getSavedFunctionName(currentJob);
+        }
+        
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
             return ImmutableSet.of(Run.class, TaskListener.class);
         }
         
-        @Override
-        public String getFunctionName() {
-            return "reqtifyReport";
-        }
-
         @JavaScriptMethod
-        public String getReqtifyError() {
-            return reqtifyError;
-        }    
- 
-        @JavaScriptMethod
-        public List<String> renderReportParamUI(String functionName, String currentJob) {
-            reqtifyError = "";
+        public List<String> renderParamUI(String functionName, String currentJob) {
+            reqtifyFunctionError = "";
             List<String> htmlList = new ArrayList<>();
-            String reqtifyLang = "eng";                  
+            String reqtifyLang = "eng";                         
             Process reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);                            
             int reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);
             JSONArray functionParameters;
@@ -159,12 +167,14 @@ public class ReportGenerationPipelineStep extends Step {
             if(functionParameters == null) {
                 return htmlList;
             }
+            
             Iterator itr = functionParameters.iterator();            
-            List selectedParamValues = Utils.getFunctionArgumentsData(currentJob, true);
+            List selectedParamValues = Utils.getFunctionArgumentsData(currentJob, false);
             Iterator selectedParamValuesItr = selectedParamValues.iterator();
             List scalarParamValues = new ArrayList();
             List nonScalarParamValues = new ArrayList();
-            //Devide selected parameter values into scalar and non-scalar type
+            
+            //Split saved parameter values in scalar and non-scalar types
             while(selectedParamValuesItr.hasNext()) {
                 String paramValue = (String)selectedParamValuesItr.next();
                 if(paramValue.startsWith("ns_")) {
@@ -173,41 +183,43 @@ public class ReportGenerationPipelineStep extends Step {
                     scalarParamValues.add(paramValue);
                 }
             }
+            
             int index = 0;
             List scalarParams = new ArrayList();           
             while(itr.hasNext()) {
                 index++;
-                JSONObject param = (JSONObject) itr.next();               
+                JSONObject param = (JSONObject) itr.next();  
                 boolean isScalar = false;
                 if(param.containsKey("isScalar")) isScalar = ((boolean)param.get("isScalar"));
                 if(!isScalar) {
                     String getFunctionParamValueURL = "http://localhost:"+reqtifyPort+
-                            "/jenkins/getReportParameterValues?functionName="
+                            "/jenkins/getFunctionParameterValues?functionName="
                             +functionName+"&paramIndex="+index;
                     try {         
                             JSONArray paramValueResult = (JSONArray)ReqtifyData.utils.executeGET(getFunctionParamValueURL, reqtifyProcess, false);
                             if (!paramValueResult.isEmpty()) { 
-                                String html = "<tr class=\"report-param\">" +
+                                String html = "<tr class=\"function-param\">" +
                                                 "	<td class=\"setting-leftspace\">&nbsp;</td>" +
                                                 "	<td class=\"setting-name\">"+param.get("name").toString()+"</td>" +
                                                 "	<td class=\"setting-main\">" +
-                                                "	   <select name=\"_.reportArgumentList\" class=\"setting-input  select\" value=\"\" multiple>";
+                                                "	   <select name=\"_.argumentList\" class=\"setting-input  select\" value=\"\" multiple>";
                                                 Iterator paramValueResultItr = paramValueResult.iterator();
                                                 while(paramValueResultItr.hasNext()) {
                                                     JSONObject paramValue = (JSONObject) paramValueResultItr.next();
-
+                                                    String hoverText;
+                                                    if(paramValue.containsKey("text")) hoverText = paramValue.get("text").toString(); else hoverText = "";
                                                     if(nonScalarParamValues.size() > 0 && nonScalarParamValues.contains(paramValue.get("id").toString()))
-                                                        html +="<option value=ns_"+paramValue.get("id").toString()+" selected>"+paramValue.get("print").toString()+"</option>";
+                                                        html +="<option value=ns_"+paramValue.get("id").toString()+" selected title=\""+hoverText+"\">"+paramValue.get("print").toString()+"</option>";
                                                     else
-                                                        html +="<option value=ns_"+paramValue.get("id").toString()+">"+paramValue.get("print").toString()+"</option>";
+                                                        html +="<option value=ns_"+paramValue.get("id").toString()+" title=\""+hoverText+"\">"+paramValue.get("print").toString()+"</option>";
                                                 }
 
                                                 html += "</select>" +
                                                 "	</td>" +
-                                                       /* "<td class=\"setting-help\"><a helpurl=\"/jenkins/plugin/reqtify/help/CallFunction/help-paramValue"+index+".html\" href=\"#\" class=\"help-button\" tabindex=\"9999\">"
-                                                        + "<svg viewBox=\"0 0 24 24\" aria-hidden=\"\" tooltip=\"Help for feature: "+param.get("name").toString()+"\" focusable=\"false\" class=\"svg-icon icon-help \">"
-                                                        + "<use href=\"/jenkins/static/f65f36d5/images/material-icons/svg-sprite-action-symbol.svg#ic_help_24px\"></use></svg>"
-                                                        + "</a></td>" +     */                                                    
+                                                /*"<td class=\"setting-help\"><a helpurl=\"/jenkins/plugin/reqtify/help/CallFunction/help-paramValue"+index+".html\" href=\"#\" class=\"help-button\" tabindex=\"9999\">"
+                                                + "<svg viewBox=\"0 0 24 24\" aria-hidden=\"\" tooltip=\"Help for feature: "+param.get("name").toString()+"\" focusable=\"false\" class=\"svg-icon icon-help \">"
+                                                + "<use href=\"/jenkins/static/f65f36d5/images/material-icons/svg-sprite-action-symbol.svg#ic_help_24px\"></use></svg>"
+                                                + "</a></td>" + */                                                        
                                                 " </tr>";
                                 htmlList.add(html);
                             }
@@ -215,7 +227,7 @@ public class ReportGenerationPipelineStep extends Step {
                             Logger.getLogger(CallFunction.class.getName()).log(Level.SEVERE, null, ex);
                         } catch (ReqtifyException re) {
                             if(re.getMessage().length() > 0) {
-                                reqtifyError = re.getMessage();
+                                reqtifyFunctionError = re.getMessage();
                             } else {  
                                 Process p = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
                                 if(p.isAlive())
@@ -223,88 +235,82 @@ public class ReportGenerationPipelineStep extends Step {
 
                                 ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
                                 ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
-                                reqtifyError = ReqtifyData.utils.getLastLineOfFile(ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log");
+                                reqtifyFunctionError = ReqtifyData.utils.getLastLineOfFile(ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log");
                             } 
                         }                 
                 } else {
                     scalarParams.add(param);
                 }
             }   
-
+            
             //Create scalar param HTML
             Iterator scalarParamsItr = scalarParams.iterator();
             Iterator scalarParamValueItr = scalarParamValues.iterator();
             while(scalarParamsItr.hasNext()) {
                 JSONObject param = (JSONObject)scalarParamsItr.next();
-                    String html = "<tr class=\"report-param\">" +
+                    String html = "<tr class=\"function-param\">" +
                                     "   <td class=\"setting-leftspace\">&nbsp;</td>" +
                                     "   <td class=\"setting-name\">"+param.get("name").toString()+"</td>" +
                                     "   <td class=\"setting-main\">";
                                     if(scalarParamValueItr.hasNext())
-                                        html+= "      <input default=\"\" name=\"_.reportArgumentList\" type=\"text\" class=\"setting-input\" value="+scalarParamValueItr.next()+">";   
+                                        html+= "      <input default=\"\" name=\"_.argumentList\" type=\"text\" class=\"setting-input\" value="+scalarParamValueItr.next()+">";   
                                     else
-                                        html+= "      <input default=\"\" name=\"_.reportArgumentList\" type=\"text\" class=\"setting-input\" value=\"\">";   
+                                        html+= "      <input default=\"\" name=\"_.argumentList\" type=\"text\" class=\"setting-input\" value=\"\">";   
                                      html+= "   </td>" +
-                                               /* "<td class=\"setting-help\"><a helpurl=\"/jenkins/plugin/reqtify/help/CallFunction/help-paramValue"+index+".html\" href=\"#\" class=\"help-button\" tabindex=\"9999\">"
+                                                /*"<td class=\"setting-help\"><a helpurl=\"/jenkins/plugin/reqtify/help/CallFunction/help-paramValue"+index+".html\" href=\"#\" class=\"help-button\" tabindex=\"9999\">"
                                                 + "<svg viewBox=\"0 0 24 24\" aria-hidden=\"\" tooltip=\"Help for feature: "+param.get("name").toString()+"\" focusable=\"false\" class=\"svg-icon icon-help \">"
                                                 + "<use href=\"/jenkins/static/f65f36d5/images/material-icons/svg-sprite-action-symbol.svg#ic_help_24px\"></use></svg>"
-                                                + "</a></td>" +    */                                          
+                                                +"</a></td>" +    */                                          
                                     "</tr>";
                     htmlList.add(html);                
             }
             Collections.reverse(htmlList);
             return htmlList;
-        }
-                
-        @Nonnull
-        @Override
-        public String getDisplayName() {
-            return io.jenkins.plugins.Messages.ReqtifyGenerateReport_DisplayName();
-        }
-
-        public ListBoxModel doFillModelReportItems() throws InterruptedException, IOException {
+        }       
+        
+        public ListBoxModel doFillFunctionNameItems() throws InterruptedException, IOException {
             ListBoxModel m = new ListBoxModel();
             synchronized(ReqtifyData.class) {
-                try {                                                
+                try {
                     String currentJob = "";
-                    reqtifyError = "";
-                    String currentWorkspace = "";
+                    String currentWorkspace;
+                    reqtifyFunctionError = "";
                     Pattern pattern = Pattern.compile("job/(.*?)/pipeline-syntax/descriptorByName");
                     Matcher matcher = pattern.matcher(Jenkins.get().getDescriptor().getDescriptorFullUrl());
                     while (matcher.find()) {
                         currentJob = matcher.group(1);
                     }
-
                     currentWorkspace = Utils.getWorkspacePath(currentJob);
-
                     String reqtifyLang = "eng";      
                     Utils.initReqtifyProcess();
                     int  reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);    
                     Process reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
 
-                    String targetURLModels = "http://localhost:"+reqtifyPort+"/jenkins/getReportModels?";
+                    String targetURLFunctions = "http://localhost:"+reqtifyPort+"/jenkins/getFunctions?"; 
                     try {
+
                         String openProjectUrl = "http://localhost:"+reqtifyPort+"/jenkins/openProject?dir="+currentWorkspace;
-                        ReqtifyData.utils.executeGET(openProjectUrl, reqtifyProcess,false);                     
-                        JSONArray modelsResult = (JSONArray)ReqtifyData.utils.executeGET(targetURLModels, reqtifyProcess,false);
-                        Iterator<JSONObject> itr = modelsResult.iterator();                        
-                        //Models
-                        m.add("Select Report Model");
+                        ReqtifyData.utils.executeGET(openProjectUrl, reqtifyProcess,false);
+                                     
+                        JSONArray functionsResult = (JSONArray)ReqtifyData.utils.executeGET(targetURLFunctions, reqtifyProcess, false);
+                        Iterator<JSONObject> itr = functionsResult.iterator();
+                        m.add("Select Function");
+                        int index = 1;                        
+                        //functions parameters
                         while (itr.hasNext()) {
-                            JSONObject model = (JSONObject) itr.next();
-                            m.add(model.get("label").toString());   
-                            //Report parameters
-                            JSONArray functionParamters = (JSONArray) model.get("parameters");
-                            functionParamterMap.put(model.get("name").toString(), functionParamters);                            
+                            JSONObject function = (JSONObject) itr.next();
+                            m.add(function.get("label").toString());
+                            m.get(index++).value = function.get("name").toString();
+                            JSONArray functionParamters = (JSONArray) function.get("parameters");
+                            functionParamterMap.put(function.get("name").toString(), functionParamters);                        
                         }
-  
                     } catch (ParseException ex) {
-                        Logger.getLogger(ReqtifyGenerateReport.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(CallFunction.class.getName()).log(Level.SEVERE, null, ex);
                     }  catch (ConnectException ce) {
                         //Show some error
                     }  catch (ReqtifyException re) {
                         if(re.getMessage().length() > 0) {
-                            reqtifyError = re.getMessage();
+                            reqtifyFunctionError = re.getMessage();
                         } else {  
                             Process p = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
                             if(p.isAlive())
@@ -312,83 +318,26 @@ public class ReportGenerationPipelineStep extends Step {
 
                             ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
                             ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
-                            reqtifyError = ReqtifyData.utils.getLastLineOfFile(ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log");
+                            reqtifyFunctionError = ReqtifyData.utils.getLastLineOfFile(ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log");
                         } 
-                    }                                      
-                } catch(IOException | AccessDeniedException e) {
-                }    
-                
-                return m;
-            }                     
-        }
-        
-        public ListBoxModel doFillTemplateReportItems() throws IOException, InterruptedException {
-            ListBoxModel m = new ListBoxModel();  
-            synchronized(ReqtifyData.class) {
-                    try {
-                        String currentJob = "";
-                        reqtifyError = "";
-                        String currentWorkspace = "";
-                        Pattern pattern = Pattern.compile("job/(.*?)/pipeline-syntax/descriptorByName");
-                        Matcher matcher = pattern.matcher(Jenkins.get().getDescriptor().getDescriptorFullUrl());
-                        while (matcher.find()) {
-                            currentJob = matcher.group(1);
-                        }
-
-                        currentWorkspace = Utils.getWorkspacePath(currentJob);
-
-                        String reqtifyLang = "eng";      
-                        Utils.initReqtifyProcess();
-                        int  reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);    
-                        Process reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);            
-                                                                                                
-                        String targetURLTemplates = "http://localhost:"+reqtifyPort+"/jenkins/getReportTemplates?";
-                        try {
-                            String openProjectUrl = "http://localhost:"+reqtifyPort+"/jenkins/openProject?dir="+currentWorkspace;
-                            ReqtifyData.utils.executeGET(openProjectUrl, reqtifyProcess,false);                           
-                            JSONArray templatesResult = (JSONArray)ReqtifyData.utils.executeGET(targetURLTemplates, reqtifyProcess, false);
-   
-                            //Templates
-                            Iterator<String> itr = templatesResult.iterator();
-                            m.add("Select Report Template");
-                            while (itr.hasNext()) {
-                                String template = itr.next();
-                                m.add(template);                            
-                            }                                                          
-                        } catch (ParseException ex) {
-                            Logger.getLogger(ReqtifyGenerateReport.class.getName()).log(Level.SEVERE, null, ex);
-                        }  catch (ConnectException ce) {
-                            //Show some error
-                        }  catch (ReqtifyException re) {
-                            if(re.getMessage().length() > 0) {
-                                reqtifyError = re.getMessage();
-                            } else {  
-                                Process p = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
-                                if(p.isAlive())
-                                    p.destroy();
-
-                                ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
-                                ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
-                                reqtifyError = ReqtifyData.utils.getLastLineOfFile(ReqtifyData.tempDir+"reqtifyLog_"+reqtifyPort+".log");
-                            } 
-                        }                                      
-                    } catch(IOException | AccessDeniedException e) {
-                    }             
-
-                    return m;
-            }
-        }        
-    }
+                    }                
+                }catch(IOException | AccessDeniedException e) {
+                }  
+            }//end synchronize
+            
+            return m;
+        }            
+    }// End Descriptorimpl
     
-    private static class ReportGenerationPipelineStepExecution extends SynchronousStepExecution<String> {
+     private static class CallFunctionPipelineStepExecution extends SynchronousStepExecution<String> {
         private static final long serialVersionUID = 1L;
 
-        private transient final ReportGenerationPipelineStep step;
-        ReportGenerationPipelineStepExecution(ReportGenerationPipelineStep step, StepContext context) {
+        private transient final CallFunctionPipelineStep step;
+        CallFunctionPipelineStepExecution(CallFunctionPipelineStep step, StepContext context) {
             super(context);
             this.step = step;
         }
-
+        
         @Override
         @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
         protected String run() throws Exception {
@@ -396,34 +345,29 @@ public class ReportGenerationPipelineStep extends Step {
             TaskListener listener = getContext().get(TaskListener.class);
             String reqtifyLang = "eng";
             Process reqtifyProcess;
-            int reqtifyPort;
+            int reqtifyPort; 
             Utils.initReqtifyProcess();
             reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);    
-            reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);                        
-
-            try {
+            reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang); 
+            try {      
+                //Open the project if it is first request that means if project is not opened
                 String currentWorkspace = Utils.getWorkspacePath(run.getParent().getName());
-                //Open the project if it is first request that means if project is not opened                   
                 String openProjectUrl = "http://localhost:"+reqtifyPort+"/jenkins/openProject?dir="+currentWorkspace;
-                ReqtifyData.utils.executeGET(openProjectUrl, reqtifyProcess,false);            
-                String targetUrl = "http://localhost:"+reqtifyPort+"/jenkins/generateReport?"+
-                                   "aReportModel="+URLEncoder.encode(modelReport,"UTF-8")+
-                                   "&aReportTemplate="+URLEncoder.encode(templateReport, "UTF-8")+
-                                   "&aFileOut="+currentWorkspace+"\\"+URLEncoder.encode(nameReport+"."+FilenameUtils.getExtension(templateReport),"UTF-8");
+                ReqtifyData.utils.executeGET(openProjectUrl, reqtifyProcess,false);
 
-
+                String targetUrl = "http://localhost:"+reqtifyPort+"/jenkins/"+functionName+"?";
                 String arg1 = "";
                 String arg2 = "";
-                if(reportArgumentList != null && reportArgumentList.length > 0) {
-                    for (String reportArgumentList1 : reportArgumentList) {
-                        if (reportArgumentList1.startsWith("ns_")) {
-                            arg1 += reportArgumentList1.split("_")[1]+",";
+                if(argumentList!=null && argumentList.length > 0) {
+                    for (String argumentList1 : argumentList) {
+                        if (argumentList1.startsWith("ns_")) {
+                            arg1 += argumentList1.split("_")[1] + ",";
                         } else {
-                            arg2 += reportArgumentList1+",";
-                        }
-                    }      
+                            arg2 += argumentList1 + ",";
+                        }                        
+                    }
                     if(!arg1.isEmpty()) {
-                        targetUrl+="&arg1=";
+                        targetUrl+="arg1=";
                         arg1 = arg1.substring(0, arg1.length() - 1);
                         targetUrl+=arg1;
                     }
@@ -431,11 +375,14 @@ public class ReportGenerationPipelineStep extends Step {
                         targetUrl+="&arg2=";     
                         arg2 = arg2.substring(0, arg2.length() - 1);    
                         targetUrl+=arg2;     
-                    }                    
+                    }                                          
                 }
-              ReqtifyData.utils.executeGET(targetUrl, reqtifyProcess,true);
+
+                Object result = ReqtifyData.utils.executeGET(targetUrl, reqtifyProcess,true);
+                listener.getLogger().print("\n\n"+functionName+" result:\n"+result.toString()+"\n\n");
+                run.setResult(Result.SUCCESS);                
             } catch (ParseException ex) {
-                Logger.getLogger(ReqtifyGenerateReport.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(CallFunction.class.getName()).log(Level.SEVERE, null, ex);
             } catch (ConnectException e) {
                 listener.error(e.getMessage());
                 run.setResult(Result.FAILURE);
@@ -454,8 +401,8 @@ public class ReportGenerationPipelineStep extends Step {
                     run.setResult(Result.FAILURE);                    
                 }
             }            
-            return "";
+            return "";            
         }
-           
-    }
+         
+     }   
 }
