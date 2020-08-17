@@ -39,12 +39,12 @@
         <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
     </scm>
     -->
-    <repositories>
+    <distributionManagement>
         <repository>
             <id>repo.jenkins-ci.org</id>
             <url>https://repo.jenkins-ci.org/public/</url>
         </repository>
-    </repositories>
+    </distributionManagement>
     <pluginRepositories>
         <pluginRepository>
             <id>repo.jenkins-ci.org</id>
