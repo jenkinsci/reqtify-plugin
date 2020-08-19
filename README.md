@@ -8,7 +8,7 @@ This plugin allows to
 
 In the project configuration page, add a **Reqtify: Generate Report** build step.
 
-![build_step](https://user-images.githubusercontent.com/37103100/60001844-0332fa00-9685-11e9-97d2-8c941af4f664.JPG)
+![build_step](https://github.com/jenkinsci/reqtify-plugin/blob/master/images/generate_report.png)
 
 This allows to fill following fields:
 
