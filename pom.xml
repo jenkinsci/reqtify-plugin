@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <url>https://wiki.jenkins.io/display/JENKINS/Reqtify+Plugin</url>
+    <url>https://github.com/jenkinsci/reqtify-plugin</url>
     <developers>
       <developer>
         <id>NKR8</id>
@@ -17,7 +17,7 @@
     </parent>
     <groupId>io.jenkins.plugins</groupId>
     <artifactId>reqtify</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <properties>
         <jenkins.version>2.235.3</jenkins.version>
