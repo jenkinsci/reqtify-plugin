@@ -10,7 +10,7 @@ In the project configuration page, add a **Reqtify: Generate a report** build st
 
 This allows to fill following fields:
 
-![reportModelsAndReportTemplates](https://wiki.jenkins.io/download/attachments/177471610/image2019-9-10_15-55-53.png?version=1&modificationDate=1568111078936&api=v2)
+![reportModelsAndReportTemplates](https://github.com/jenkinsci/reqtify-plugin/blob/master/images/generate_report_build_step.PNG)
 
 * **Name of report** - This is the name of report without any path or suffix. This report file will be created at the root of the Jenkins workspace.
 
