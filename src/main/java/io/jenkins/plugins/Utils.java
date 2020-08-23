@@ -236,7 +236,7 @@ public class Utils {
     public static List getFunctionArgumentsData(String currentJob, boolean report) {
         List selectedArguments = new ArrayList();
         try {
-            File file = Paths.get(Jenkins.get().getItem(currentJob).getRootDir().getAbsolutePath(),"config.xml").toFile(); 
+            File file = Paths.get(Jenkins.get().getRootPath()+"\\jobs\\"+currentJob,"config.xml").toFile(); 
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document document = db.parse(file);
@@ -262,7 +262,7 @@ public class Utils {
     public static String getSavedFunctionName(String currentJob) {
         String functionName = "";
          try {
-            File file = Paths.get(Jenkins.get().getItem(currentJob).getRootDir().getAbsolutePath(),"config.xml").toFile(); 
+            File file = Paths.get(Jenkins.get().getRootPath()+"\\jobs\\"+currentJob,"config.xml").toFile(); 
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document document = db.parse(file);
@@ -280,7 +280,7 @@ public class Utils {
     public static String getSavedReportName(String currentJob) {
         String reportName = "";
          try {
-            File file = Paths.get(Jenkins.get().getItem(currentJob).getRootDir().getAbsolutePath(),"config.xml").toFile(); 
+            File file = Paths.get(Jenkins.get().getRootPath()+"\\jobs\\"+currentJob,"config.xml").toFile();  
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document document = db.parse(file);
