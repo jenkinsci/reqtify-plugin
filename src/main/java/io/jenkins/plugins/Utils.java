@@ -36,6 +36,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -294,30 +295,26 @@ public class Utils {
         }
     }    
     
-    public static String getWorkspacePath(String currentJob) {
+    public static String getWorkspacePath(String currentJob) throws UnsupportedEncodingException {
         String currentWorkspace = "";
-        try {           
-            if(ReqtifyData.pluginEnv.equals("DEBUG")) {
-                currentWorkspace = Jenkins.get().getRootPath()+"\\jobs\\"+currentJob+"\\workspace";             
-                if(currentWorkspace.contains(" ")) {
-                  currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
-                }               
-            } else {
-                currentWorkspace = Jenkins.get().getRootPath()+"\\workspace\\"+currentJob;             
-                if(currentWorkspace.contains(" ")) {
-                  currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
-                }
-            }
-            
-            //Create workspace folder if not exists
-            File wsDirectory = new File(currentWorkspace);
-            boolean wsExists = wsDirectory.exists();
-            if(!wsExists) {
-                boolean created = wsDirectory.mkdirs();    
-                if(!created) return currentWorkspace;
-            }
-        } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+        currentJob = URLDecoder.decode(currentJob, "UTF-8");
+        if(ReqtifyData.pluginEnv.equals("DEBUG")) {
+            currentWorkspace = Jenkins.get().getRootPath()+"\\jobs\\"+currentJob+"\\workspace";
+            /*if(currentWorkspace.contains(" ")) {
+            currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
+            } */
+        } else {
+            currentWorkspace = Jenkins.get().getRootPath()+"\\workspace\\"+currentJob;
+            /*if(currentWorkspace.contains(" ")) {
+            currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
+            }*/
+        }
+        //Create workspace folder if not exists
+        File wsDirectory = Paths.get(currentWorkspace).toFile();
+        boolean wsExists = wsDirectory.exists();
+        if(!wsExists) {
+            boolean created = wsDirectory.mkdirs();
+            if(!created) return currentWorkspace;
         } 
        return currentWorkspace;
     }
