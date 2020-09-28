@@ -14,13 +14,13 @@ This allows to fill following fields:
 
 ![reportModelsAndReportTemplates](https://github.com/jenkinsci/reqtify-plugin/blob/master/images/generate_report_build_step.PNG)
 
-* **Name of report** - This is the name of report without any path or suffix. This report file will be created at the root of the Jenkins workspace.
+* **Report Name** - This is the report file name without any path or suffix. This report file will be created at the root of the Jenkins workspace.
 
-* **Model of report** - This is the report model. The list contains both library and project report models.
+* **Report Model** - This is the report model. The list contains both library and project report models.
 
 * **docs** - A scalar paramter to for report generation
 
-* **Template of report** - This is the template of report. The list contains both library and project report templates.
+* **Report Template** - This is the report template. The list contains both library and project report templates like HTML, DOCX, Excel, PDF etc.
 
 ### Configure calling function build step
 

@@ -5,7 +5,7 @@
 	<f:textbox field="lang" value="${%eng}" default="${%eng}"/>
      </f:invisibleEntry>
                
-    <f:entry title="${%Funation Name}" field="functionName" help="/plugin/reqtify/help/CallFunction/help-functionList.html">
+    <f:entry title="${%Function Name}" field="functionName" help="/plugin/reqtify/help/CallFunction/help-functionList.html">
       <f:select id="functions" onchange="getParameterValues()" onload="showReqtifyError()" />
       <script>
             var i = setInterval(function() { 

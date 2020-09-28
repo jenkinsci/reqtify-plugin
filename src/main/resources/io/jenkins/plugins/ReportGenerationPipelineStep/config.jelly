@@ -4,11 +4,11 @@
     <f:invisibleEntry>
 		<f:textbox  field="lang" value="${%eng}" default="${%eng}"/>
      </f:invisibleEntry>
-    <f:entry title="${%Name of report}" field="nameReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-name.html">
+    <f:entry title="${%Report Name}" field="nameReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-name.html">
 		<f:textbox default="Report"/>
     </f:entry>
         
-    <f:entry title="${%Model of report}" field="modelReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-model.html">
+    <f:entry title="${%Report Model}" field="modelReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-model.html">
       <f:select id="reports" onchange="getReportParameterValues()" />
       <script>
             var i = setInterval(function() { 
@@ -18,7 +18,7 @@
       </script>          
     </f:entry>
 
-    <f:entry title="${%Template of report}" field="templateReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-template.html">
+    <f:entry title="${%Report Template}" field="templateReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-template.html">
       <f:select id="templates" />
       <script>
             var i = setInterval(function() { 
