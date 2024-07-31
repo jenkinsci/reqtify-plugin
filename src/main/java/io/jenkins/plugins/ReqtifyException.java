@@ -24,11 +24,10 @@
 
 package io.jenkins.plugins;
 
-
 public class ReqtifyException extends Exception {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public ReqtifyException(String msg) {
+    public ReqtifyException(String msg) {
         super(msg);
     }
 }

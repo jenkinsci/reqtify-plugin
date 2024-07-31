@@ -26,16 +26,15 @@ package io.jenkins.plugins;
 import java.util.HashMap;
 import java.util.Map;
 
-
 @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("MS_SHOULD_BE_FINAL")
 public class ReqtifyData {
-        public static Utils utils = new Utils();       
-        public static Map<String, Process> reqtfyLanguageProcessMap = new HashMap<>();
-        public static Map<String, Integer> reqtifyLanguagePortMap = new HashMap<>();        
-        public static String tempDir = System.getProperty("java.io.tmpdir");                        
-        public static String reqtifyTimeoutValue = "1800";
-        //public static String pluginEnv = "DEBUG";
-        public static String pluginEnv = "RELEASE";
-        @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("MS_PKGPROTECT")
-        public static String cookie = "" ;
+    public static Utils utils = new Utils();
+    public static Map<String, Process> reqtfyLanguageProcessMap = new HashMap<>();
+    public static Map<String, Integer> reqtifyLanguagePortMap = new HashMap<>();
+    public static String tempDir = System.getProperty("java.io.tmpdir");
+    public static String reqtifyTimeoutValue = "1800";
+    public static String pluginEnv = "DEBUG";
+    // public static String pluginEnv = "RELEASE";
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("MS_PKGPROTECT")
+    public static String cookie = "";
 }
