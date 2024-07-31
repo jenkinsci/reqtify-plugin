@@ -37,7 +37,6 @@
   </scm>
 
   <properties>
-    <revision>1.0</revision>
     <changelist>-SNAPSHOT</changelist>
     <jenkins.version>2.414.3</jenkins.version>
     <gitHubRepo>jenkinsci/reqtify-plugin</gitHubRepo>
