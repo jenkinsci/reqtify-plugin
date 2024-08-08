@@ -41,3 +41,4 @@ This allows to fill following fields:
 ### Note:
 The plugin will work only when Reqtify project is present in the Jenkins workspace. <br>
 **Reqtify version required: 2021x**
+**for 64-bit Reqtify need Reqtify plugin version 3.0.0 or more**
