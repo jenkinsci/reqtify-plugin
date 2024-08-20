@@ -74,12 +74,26 @@ public class Utils {
         path = readAll(in);
         in.close();
         String key = path.substring(path.indexOf('{') + 1, path.indexOf('}'));
+        String localServer32Path = null;
         proc = Runtime.getRuntime().exec("reg query HKCR\\CLSID\\{" + key + "}\\LocalServer32");
         in = proc.getInputStream();
-        path = readAll(in);
+        localServer32Path = readAll(in);
         in.close();
-        path = path.substring(path.indexOf('"') + 1, path.indexOf('"', path.indexOf('"') + 1));
-        return path;
+
+        if(localServer32Path.isEmpty()){
+            proc = Runtime.getRuntime().exec("reg query HKCR\\WOW6432Node\\CLSID\\{" + key + "}\\LocalServer32");
+            in = proc.getInputStream();
+            localServer32Path = readAll(in);
+            in.close();
+        }
+        if(localServer32Path.contains("\"")){
+            path = localServer32Path.substring(localServer32Path.indexOf('"') + 1, localServer32Path.indexOf('"', localServer32Path.indexOf('"') + 1));
+            return path;
+        }
+        else{
+            throw new IOException("Reqtify path not found tried path: HKCR\\\\CLSID\\\\{\" + key + \"}\\\\LocalServer32\\ and HKCR\\\\WOW6432Node\\\\CLSID\\\\{\" + key + \"}\\\\LocalServer32");
+        }
+
     }
 
     @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")

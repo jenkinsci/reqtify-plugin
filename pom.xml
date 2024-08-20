@@ -12,6 +12,7 @@
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>reqtify</artifactId>
   <version>${revision}-${changelist}</version>
+  <packaging>hpi</packaging>
 
   <name>Reqtify Plugin</name>
   <url>https://wiki.jenkins.io/display/JENKINS/Reqtify+Plugin</url>
@@ -36,7 +37,7 @@
     <tag>HEAD</tag>
     <url>https://github.com/jenkinsci/reqtify-plugin</url>
   </scm>
-  
+
   <properties>
     <revision>1.0</revision>
     <changelist>-SNAPSHOT</changelist>
