@@ -5,13 +5,13 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.80</version>
+    <version>4.64</version>
     <relativePath />
   </parent>
 
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>reqtify</artifactId>
-  <version>${revision}-${changelist}</version>
+  <version>3.0.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Reqtify Plugin</name>
