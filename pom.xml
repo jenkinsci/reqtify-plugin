@@ -11,7 +11,7 @@
 
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>reqtify</artifactId>
-  <version>${revision}-${changelist}</version>
+  <version>3.0.4-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Reqtify Plugin</name>
@@ -36,17 +36,6 @@
     <tag>HEAD</tag>
     <url>https://github.com/jenkinsci/reqtify-plugin</url>
   </scm>
-
-  <distributionManagement>
-    <repository>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/releases/</url>
-    </repository>
-    <snapshotRepository>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
 
   <properties>
     <revision>1.0</revision>
