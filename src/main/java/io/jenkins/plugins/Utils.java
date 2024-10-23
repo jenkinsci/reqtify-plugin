@@ -26,7 +26,6 @@ package io.jenkins.plugins;
 import static io.jenkins.plugins.ReqtifyGenerateReport.readAll;
 
 import hudson.FilePath;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -51,7 +50,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import jenkins.model.Jenkins;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -88,12 +86,14 @@ public class Utils {
             in.close();
         }
         if (localServer32Path.contains("\"")) {
-            path = localServer32Path.substring(localServer32Path.indexOf('"') + 1, localServer32Path.indexOf('"', localServer32Path.indexOf('"') + 1));
+            path = localServer32Path.substring(
+                    localServer32Path.indexOf('"') + 1,
+                    localServer32Path.indexOf('"', localServer32Path.indexOf('"') + 1));
             return path;
         } else {
-            throw new IOException("Reqtify path not found tried path: HKCR\\\\CLSID\\\\{\" + key + \"}\\\\LocalServer32\\ and HKCR\\\\WOW6432Node\\\\CLSID\\\\{\" + key + \"}\\\\LocalServer32");
+            throw new IOException(
+                    "Reqtify path not found tried path: HKCR\\\\CLSID\\\\{\" + key + \"}\\\\LocalServer32\\ and HKCR\\\\WOW6432Node\\\\CLSID\\\\{\" + key + \"}\\\\LocalServer32");
         }
-
     }
 
     @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
@@ -313,11 +313,17 @@ public class Utils {
     public static String getWorkspacePath(String currentJob) throws UnsupportedEncodingException {
         String currentWorkspace = "";
         currentJob = URLDecoder.decode(currentJob, "UTF-8");
+        if (ReqtifyData.pluginEnv.equals("DEBUG")) {
+            currentWorkspace = Jenkins.get().getRootPath() + "\\jobs\\" + currentJob + "\\workspace";
+            /*if(currentWorkspace.contains(" ")) {
+            currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
+            } */
+        } else {
             currentWorkspace = Jenkins.get().getRootPath() + "\\workspace\\" + currentJob;
             /*if(currentWorkspace.contains(" ")) {
             currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
             }*/
-
+        }
         // Create workspace folder if not exists
         File wsDirectory = Paths.get(currentWorkspace).toFile();
         boolean wsExists = wsDirectory.exists();
@@ -342,15 +348,15 @@ public class Utils {
                 if (ReqtifyData.reqtfyLanguageProcessMap.isEmpty()) {
                     reqtifyPort = ReqtifyData.utils.nextFreePort(4000, 8000);
                     String[] args = {
-                            reqtifyPath,
-                            "-http",
-                            String.valueOf(reqtifyPort),
-                            "-logfile",
-                            ReqtifyData.tempDir + "reqtifyLog_" + reqtifyPort + ".log",
-                            "-l",
-                            reqtifyLang,
-                            "-timeout",
-                            ReqtifyData.reqtifyTimeoutValue
+                        reqtifyPath,
+                        "-http",
+                        String.valueOf(reqtifyPort),
+                        "-logfile",
+                        ReqtifyData.tempDir + "reqtifyLog_" + reqtifyPort + ".log",
+                        "-l",
+                        reqtifyLang,
+                        "-timeout",
+                        ReqtifyData.reqtifyTimeoutValue
                     };
                     Process proc = Runtime.getRuntime().exec(args);
                     ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
@@ -359,15 +365,15 @@ public class Utils {
                 } else if (!ReqtifyData.reqtfyLanguageProcessMap.containsKey(reqtifyLang)) {
                     reqtifyPort = ReqtifyData.utils.nextFreePort(4000, 8000);
                     String[] args = {
-                            reqtifyPath,
-                            "-http",
-                            String.valueOf(reqtifyPort),
-                            "-logfile",
-                            ReqtifyData.tempDir + "reqtifyLog_" + reqtifyPort + ".log",
-                            "-l",
-                            reqtifyLang,
-                            "-timeout",
-                            ReqtifyData.reqtifyTimeoutValue
+                        reqtifyPath,
+                        "-http",
+                        String.valueOf(reqtifyPort),
+                        "-logfile",
+                        ReqtifyData.tempDir + "reqtifyLog_" + reqtifyPort + ".log",
+                        "-l",
+                        reqtifyLang,
+                        "-timeout",
+                        ReqtifyData.reqtifyTimeoutValue
                     };
                     Process proc = Runtime.getRuntime().exec(args);
                     ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
@@ -380,15 +386,15 @@ public class Utils {
                         ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
                         reqtifyPort = ReqtifyData.utils.nextFreePort(4000, 8000);
                         String[] args = {
-                                reqtifyPath,
-                                "-http",
-                                String.valueOf(reqtifyPort),
-                                "-logfile",
-                                ReqtifyData.tempDir + "reqtifyLog_" + reqtifyPort + ".log",
-                                "-l",
-                                reqtifyLang,
-                                "-timeout",
-                                ReqtifyData.reqtifyTimeoutValue
+                            reqtifyPath,
+                            "-http",
+                            String.valueOf(reqtifyPort),
+                            "-logfile",
+                            ReqtifyData.tempDir + "reqtifyLog_" + reqtifyPort + ".log",
+                            "-l",
+                            reqtifyLang,
+                            "-timeout",
+                            ReqtifyData.reqtifyTimeoutValue
                         };
                         Process proc = Runtime.getRuntime().exec(args);
                         ReqtifyData.reqtfyLanguageProcessMap.put(reqtifyLang, proc);
