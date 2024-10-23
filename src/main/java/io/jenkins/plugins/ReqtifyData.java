@@ -33,8 +33,9 @@ public class ReqtifyData {
     public static Map<String, Integer> reqtifyLanguagePortMap = new HashMap<>();
     public static String tempDir = System.getProperty("java.io.tmpdir");
     public static String reqtifyTimeoutValue = "1800";
-    public static String pluginEnv = "DEBUG";
-    // public static String pluginEnv = "RELEASE";
+    // public static String pluginEnv = "DEBUG";
+    public static String pluginEnv = "RELEASE";
+
     @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("MS_PKGPROTECT")
     public static String cookie = "";
 }
