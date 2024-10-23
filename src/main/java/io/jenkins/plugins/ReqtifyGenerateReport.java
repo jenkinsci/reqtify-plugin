@@ -63,6 +63,7 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
     private String modelReport;
     private String templateReport;
     private String[] reportArgumentList;
+    private String projectFilter;
     private String lang;
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("io.jenkins.plugins.Messages");
 
@@ -73,11 +74,16 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
     @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("EI_EXPOSE_REP2")
     @DataBoundConstructor
     public ReqtifyGenerateReport(
-            String nameReport, String modelReport, String templateReport, String[] reportArgumentList) {
+            String nameReport,
+            String modelReport,
+            String templateReport,
+            String[] reportArgumentList,
+            String projectFilter) {
         this.nameReport = nameReport;
         this.modelReport = modelReport;
         this.templateReport = templateReport;
         this.reportArgumentList = reportArgumentList;
+        this.projectFilter = projectFilter;
     }
 
     @Nonnull
@@ -91,6 +97,10 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
 
     public String getTemplateReport() {
         return this.templateReport;
+    }
+
+    public String getProjectFilter() {
+        return this.projectFilter;
     }
 
     public String getLang() {
@@ -115,6 +125,11 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
     @DataBoundSetter
     public void setTemplateReport(String templateReport) {
         this.templateReport = templateReport;
+    }
+
+    @DataBoundSetter
+    public void setProjectFilter(String projectFilter) {
+        this.projectFilter = projectFilter;
     }
 
     @Override
@@ -147,6 +162,12 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
             String currentWorkspace = Utils.getWorkspacePath(run.getParent().getName());
             String openProjectUrl = "http://localhost:" + reqtifyPort + "/jenkins/openProject?dir=" + currentWorkspace;
             ReqtifyData.utils.executeGET(openProjectUrl, reqtifyProcess, false);
+            // set project filter name Bug-207442
+            if (!(this.projectFilter.isEmpty())) {
+                String targetUrl = "http://localhost:" + reqtifyPort + "/jenkins/setProjectFilterName?afilterName="
+                        + URLEncoder.encode(this.projectFilter, "UTF-8");
+                ReqtifyData.utils.executeGET(targetUrl, reqtifyProcess, true);
+            }
 
             String targetUrl = "http://localhost:" + reqtifyPort + "/jenkins/generateReport?" + "aReportModel="
                     + URLEncoder.encode(this.modelReport, "UTF-8") + "&aReportTemplate="
@@ -340,6 +361,73 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                 return m;
             }
         }
+        // get project filter name Bug-207442
+        private ListBoxModel getProjectFilters() {
+            ListBoxModel m = new ListBoxModel();
+            synchronized (ReqtifyData.class) {
+                try {
+                    String currentJob = "";
+                    reqtifyError = "";
+                    String currentWorkspace = "";
+                    Pattern pattern = Pattern.compile("job/(.*?)/descriptorByName");
+                    Matcher matcher =
+                            pattern.matcher(Jenkins.get().getDescriptor().getDescriptorFullUrl());
+                    while (matcher.find()) {
+                        currentJob = matcher.group(1);
+                    }
+
+                    currentWorkspace = Utils.getWorkspacePath(currentJob);
+
+                    String reqtifyLang = "eng";
+                    Utils.initReqtifyProcess();
+                    int reqtifyPort = ReqtifyData.reqtifyLanguagePortMap.get(reqtifyLang);
+                    Process reqtifyProcess = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
+
+                    String targetURLTemplates = "http://localhost:" + reqtifyPort + "/jenkins/getProjectFilterNames?";
+                    try {
+                        String openProjectUrl =
+                                "http://localhost:" + reqtifyPort + "/jenkins/openProject?dir=" + currentWorkspace;
+                        ReqtifyData.utils.executeGET(openProjectUrl, reqtifyProcess, false);
+                        JSONArray templatesResult =
+                                (JSONArray) ReqtifyData.utils.executeGET(targetURLTemplates, reqtifyProcess, false);
+                        //                        JSONArray templatesResult = new JSONArray();
+                        //
+                        //                        // Adding elements to the JSONArray
+                        //                        templatesResult.add("no filter");
+                        //                        templatesResult.add("Software reqs");
+                        //                        templatesResult.add("Tests Passed");
+                        //                        templatesResult.add("Tests Failed");
+                        //                        templatesResult.add("Non Tested");
+
+                        Iterator<String> itr = templatesResult.iterator();
+                        m.add(new ListBoxModel.Option("Select Project Filter", "", true));
+                        while (itr.hasNext()) {
+                            String template = itr.next();
+                            m.add(template);
+                        }
+                    } catch (ParseException ex) {
+                        Logger.getLogger(ReqtifyGenerateReport.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (ConnectException ce) {
+                        // Show some error
+                    } catch (ReqtifyException re) {
+                        if (re.getMessage().length() > 0) {
+                            reqtifyError = re.getMessage();
+                        } else {
+                            Process p = ReqtifyData.reqtfyLanguageProcessMap.get(reqtifyLang);
+                            if (p.isAlive()) p.destroy();
+
+                            ReqtifyData.reqtfyLanguageProcessMap.remove(reqtifyLang);
+                            ReqtifyData.reqtifyLanguagePortMap.remove(reqtifyLang);
+                            reqtifyError = ReqtifyData.utils.getLastLineOfFile(
+                                    ReqtifyData.tempDir + "reqtifyLog_" + reqtifyPort + ".log");
+                        }
+                    }
+                } catch (IOException | AccessDeniedException e) {
+                }
+
+                return m;
+            }
+        }
 
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
@@ -399,9 +487,8 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                         JSONArray paramValueResult = (JSONArray)
                                 ReqtifyData.utils.executeGET(getFunctionParamValueURL, reqtifyProcess, false);
                         if (!paramValueResult.isEmpty()) {
-                            String html = "<tr class=\"report-param\">" + "	<td class=\"setting-leftspace\">&nbsp;</td>"
-                                    + "	<td class=\"setting-name\">"
-                                    + param.get("name").toString() + "</td>" + "	<td class=\"setting-main\">"
+                            String html = "<div class=\"report-param\">"
+                                    + param.get("name").toString()
                                     + "	   <select name=\"_.reportArgumentList\" class=\"setting-input  select\" value=\"\" multiple>";
                             Iterator paramValueResultItr = paramValueResult.iterator();
                             while (paramValueResultItr.hasNext()) {
@@ -418,14 +505,13 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                                             + paramValue.get("id").toString() + ">"
                                             + paramValue.get("print").toString() + "</option>";
                             }
-
-                            html += "</select>" + "	</td>"
+                            html += "</select>"
                                     +
                                     /* "<td class=\"setting-help\"><a helpurl=\"/jenkins/plugin/reqtify/help/CallFunction/help-paramValue"+index+".html\" href=\"#\" class=\"help-button\" tabindex=\"9999\">"
                                     + "<svg viewBox=\"0 0 24 24\" aria-hidden=\"\" tooltip=\"Help for feature: "+param.get("name").toString()+"\" focusable=\"false\" class=\"svg-icon icon-help \">"
                                     + "<use href=\"/jenkins/static/f65f36d5/images/material-icons/svg-sprite-action-symbol.svg#ic_help_24px\"></use></svg>"
                                     + "</a></td>" +    */
-                                    " </tr>";
+                                    " </div>";
                             htmlList.add(html);
                         }
                     } catch (ParseException | IOException ex) {
@@ -453,9 +539,9 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
             Iterator scalarParamValueItr = scalarParamValues.iterator();
             while (scalarParamsItr.hasNext()) {
                 JSONObject param = (JSONObject) scalarParamsItr.next();
-                String html = "<tr class=\"report-param\">" + "   <td class=\"setting-leftspace\">&nbsp;</td>"
-                        + "   <td class=\"setting-name\">"
-                        + param.get("name").toString() + "</td>" + "   <td class=\"setting-main\">";
+                String html = "<div class=\"report-param\">" + "   <div class=\"setting-leftspace\">&nbsp;</div>"
+                        + "   <div class=\"setting-name\">"
+                        + param.get("name").toString() + "</div>" + "   <div class=\"setting-main\">";
                 if (scalarParamValueItr.hasNext())
                     html +=
                             "      <input default=\"\" name=\"_.reportArgumentList\" type=\"text\" class=\"setting-input\" value="
@@ -463,12 +549,12 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
                 else
                     html +=
                             "      <input default=\"\" name=\"_.reportArgumentList\" type=\"text\" class=\"setting-input\" value=\"\">";
-                html += "   </td>" +
+                html += "   </div>" +
                         /*  "<td class=\"setting-help\"><a helpurl=\"/jenkins/plugin/reqtify/help/CallFunction/help-paramValue"+index+".html\" href=\"#\" class=\"help-button\" tabindex=\"9999\">"
                         + "<svg viewBox=\"0 0 24 24\" aria-hidden=\"\" tooltip=\"Help for feature: "+param.get("name").toString()+"\" focusable=\"false\" class=\"svg-icon icon-help \">"
                         + "<use href=\"/jenkins/static/f65f36d5/images/material-icons/svg-sprite-action-symbol.svg#ic_help_24px\"></use></svg>"
                         + "</a></td>" +    */
-                        "</tr>";
+                        "</div>";
                 htmlList.add(html);
             }
             Collections.reverse(htmlList);
@@ -481,6 +567,10 @@ public class ReqtifyGenerateReport extends Builder implements SimpleBuildStep {
 
         public ListBoxModel doFillTemplateReportItems() throws IOException, InterruptedException {
             return getReportTemplates();
+        }
+
+        public ListBoxModel doFillProjectFilterItems() throws IOException, InterruptedException {
+            return getProjectFilters();
         }
     }
 }

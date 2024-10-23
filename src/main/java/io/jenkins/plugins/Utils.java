@@ -313,11 +313,17 @@ public class Utils {
     public static String getWorkspacePath(String currentJob) throws UnsupportedEncodingException {
         String currentWorkspace = "";
         currentJob = URLDecoder.decode(currentJob, "UTF-8");
-        currentWorkspace = Jenkins.get().getRootPath() + "\\workspace\\" + currentJob;
-        /*if(currentWorkspace.contains(" ")) {
-        currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
-        }*/
-
+        if (ReqtifyData.pluginEnv.equals("DEBUG")) {
+            currentWorkspace = Jenkins.get().getRootPath() + "\\jobs\\" + currentJob + "\\workspace";
+            /*if(currentWorkspace.contains(" ")) {
+            currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
+            } */
+        } else {
+            currentWorkspace = Jenkins.get().getRootPath() + "\\workspace\\" + currentJob;
+            /*if(currentWorkspace.contains(" ")) {
+            currentWorkspace = URLEncoder.encode(currentWorkspace, "UTF-8");
+            }*/
+        }
         // Create workspace folder if not exists
         File wsDirectory = Paths.get(currentWorkspace).toFile();
         boolean wsExists = wsDirectory.exists();

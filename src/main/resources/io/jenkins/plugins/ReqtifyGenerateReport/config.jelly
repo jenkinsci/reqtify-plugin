@@ -9,23 +9,75 @@
     </f:entry>
         
     <f:entry title="${%Report Model}" field="modelReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-model.html">
-      <f:select id="reports" onchange="getReportParameterValues()" />
+      <f:select id="reports" onclick="getReportParameterValues()" />
       <script>
-            var i = setInterval(function() { 
-                var isPending = document.getElementById("reports").hasClassName("select-ajax-pending");
-                if(!isPending) { clearInterval(i); showReqtifyError(); }
-            }, 1000);                    
+          document.addEventListener("DOMContentLoaded", function() {
+          var errorAlreadyChecked = false;
+          var i = setInterval(function() {
+          var reportsElement = document.getElementById("reports");
+          if (reportsElement) {
+          var isPending = reportsElement.classList.contains("select-ajax-pending");
+          if (!isPending) {
+          if (!errorAlreadyChecked) {
+          clearInterval(i);
+          showReqtifyError();
+          errorAlreadyChecked = true;
+          }
+          }
+          } else {
+          console.error("Element with ID 'reports' not found.");
+          }
+          }, 1000);
+          });
       </script>          
     </f:entry>
 
     <f:entry title="${%Report Template}" field="templateReport" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-template.html">
       <f:select id="templates"/>
       <script>
-            var i = setInterval(function() { 
-                var isPending = document.getElementById("templates").hasClassName("select-ajax-pending");
-                if(!isPending) { clearInterval(i); showReqtifyError(); }
-            }, 1000);                    
+          document.addEventListener("DOMContentLoaded", function() {
+          var errorAlreadyChecked = false;
+          var i = setInterval(function() {
+          var templatesElement = document.getElementById("templates");
+          if (templatesElement) {
+          var isPending = templatesElement.classList.contains("select-ajax-pending");
+          if (!isPending) {
+          if (!errorAlreadyChecked) {
+          clearInterval(i);
+          showReqtifyError();
+          errorAlreadyChecked = true;
+          }
+          }
+          } else {
+          console.error("Element with ID 'templates' not found.");
+          }
+          }, 1000);
+          });
       </script>          
+    </f:entry>
+
+    <f:entry title="${%Project Filter}" field="projectFilter" help="/plugin/reqtify/help/ReqtifyGenerateReport/help-filter.html">
+        <f:select id="filters" />
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+            var errorAlreadyChecked = false;
+            var i = setInterval(function() {
+            var filtersElement = document.getElementById("filters");
+            if (filtersElement) {
+            var isPending = filtersElement.classList.contains("select-ajax-pending");
+            if (!isPending) {
+            if (!errorAlreadyChecked) {
+            clearInterval(i);
+            showReqtifyError();
+            errorAlreadyChecked = true;
+            }
+            }
+            } else {
+            console.error("Element with ID 'filters' not found.");
+            }
+            }, 1000);
+            });
+        </script>
     </f:entry>
 
     <f:entry field="reqtifyError">
@@ -41,12 +93,13 @@
             backend.renderReportParamUI(functionName,currentJob, function(htmlList){
                 document.querySelectorAll(".report-param").forEach(el => el.remove());
                 var myJSON = JSON.stringify(htmlList);
-                var res = JSON.parse(myJSON);     
+                var res = JSON.parse(myJSON);
                 var paramValues = JSON.parse(res.responseJSON);
                 var tr = document.getElementById("reports").parentElement.parentElement;
+
                 paramValues.forEach((html) => {
                   tr.insertAdjacentHTML('afterend', html);
-                });    
+                });
                 showReqtifyError();
             });
           }
@@ -64,7 +117,7 @@
                           tr.insertAdjacentHTML('afterend', html);
                         });
                         showReqtifyError();
-                    });                    
+                    });
                 }
           });     
         }, 1000);
