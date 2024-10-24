@@ -90,16 +90,26 @@
          function getReportParameterValues() {
             var e = document.getElementById("reports");
             var functionName = e.options[e.selectedIndex].value;
-            backend.renderReportParamUI(functionName,currentJob, function(htmlList){
-                document.querySelectorAll(".report-param").forEach(el => el.remove());
-                var myJSON = JSON.stringify(htmlList);
-                var res = JSON.parse(myJSON);
-                var paramValues = JSON.parse(res.responseJSON);
-                var tr = document.getElementById("reports").parentElement.parentElement;
+            backend.renderReportParamUI(functionName,currentJob, function(response){
+                  if (response.status === 200) {
+                  // Remove existing report parameters
+                  document.querySelectorAll(".report-param").forEach(el => el.remove());
 
-                paramValues.forEach((html) => {
+                  // Access the responseJSON
+                  var htmlList = response.responseJSON;
+
+                  // Ensure htmlList is an array
+                  if (Array.isArray(htmlList)) {
+                  htmlList.forEach((html) => {
+                  var tr = document.getElementById("reports").parentElement.parentElement;
                   tr.insertAdjacentHTML('afterend', html);
-                });
+                  });
+                  } else {
+                  console.error("Expected an array in responseJSON but got:", htmlList);
+                  }
+                  } else {
+                  console.error("Error in response:", response.statusText);
+                  }
                 showReqtifyError();
             });
           }
