@@ -11,7 +11,7 @@
 
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>reqtify</artifactId>
-  <version>4.0.1-SNAPSHOT</version>
+  <version>${revision}-${changelist}</version>
   <packaging>hpi</packaging>
 
   <name>Reqtify Plugin</name>
@@ -33,9 +33,20 @@
   <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
     <connection>scm:git:ssh://github.com/jenkinsci/reqtify-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/reqtify-plugin.git</developerConnection>
-    <tag>reqtify-4.0.0</tag>
+    <tag>HEAD</tag>
     <url>https://github.com/jenkinsci/reqtify-plugin</url>
   </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>maven.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>maven.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <properties>
     <revision>1.0</revision>
